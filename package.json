@@ -1,0 +1,13 @@
+{
+  "name": "tenlea-root",
+  "version": "1.0.0",
+  "private": true,
+  "description": "TENLEA Root Project Manager",
+  "main": "start.js",
+  "scripts": {
+    "dev": "node start.js",
+    "start": "node start.js",
+    "client": "npm --prefix client run dev",
+    "server": "npm --prefix server run dev"
+  }
+}
