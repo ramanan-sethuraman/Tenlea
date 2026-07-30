@@ -33,10 +33,10 @@ if (process.env.NODE_ENV === 'development') {
 // Serve uploaded static files
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
-// Serve client static build files if available
-const clientDistPath = path.join(__dirname, '../client/dist');
-if (fs.existsSync(clientDistPath)) {
-  app.use(express.static(clientDistPath));
+// Serve frontend static build files if available
+const frontendDistPath = path.join(__dirname, '../frontend/dist');
+if (fs.existsSync(frontendDistPath)) {
+  app.use(express.static(frontendDistPath));
 }
 
 // Import API Routes
@@ -80,7 +80,7 @@ app.get('*', (req, res) => {
       message: `API endpoint ${req.originalUrl} not found on server.`
     });
   }
-  const indexPath = path.join(clientDistPath, 'index.html');
+  const indexPath = path.join(frontendDistPath, 'index.html');
   if (fs.existsSync(indexPath)) {
     res.sendFile(indexPath);
   } else {

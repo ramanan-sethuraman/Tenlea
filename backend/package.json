@@ -1,5 +1,5 @@
 {
-  "name": "tenlea-server",
+  "name": "tenlea-backend",
   "version": "1.0.0",
   "description": "TENLEA Backend REST API Server",
   "main": "server.js",

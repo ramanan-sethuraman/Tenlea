@@ -1,51 +1,76 @@
-# TENLEA — Monetize Your Space
+# 🚗 TENLEA — Monetize & Rent Parking Spaces
 
-> A trusted marketplace connecting landowners with unused parking/land space and vehicle owners looking for safe temporary parking in India.
+> **TENLEA** is a peer-to-peer marketplace connecting landowners with unused parking or land spaces with vehicle owners seeking safe, affordable temporary or long-term parking across India.
+
+---
+
+## 🌟 Key Features
+
+- **🏠 Landowner / Host Portal**: List unused land or parking slots with custom pricing, amenities, images, and availability.
+- **🚘 Vehicle Owner / Guest Portal**: Search, filter, and book parking spaces nearby with real-time slot availability.
+- **🔒 Secure Authentication & KYC**: JWT-based authentication with role-based access control (User, Host, Admin) and KYC verification.
+- **📄 Digital Rental Agreements**: Auto-generated legal agreements between space providers and renters.
+- **💳 Payments & Payouts**: Secure payment gateway integration with transaction logs and payout tracking.
+- **⭐ Reviews & Ratings**: Rate and review host spaces and guest experiences.
+- **🚨 Dispute Management**: Dedicated support flow for resolution of booking or space issues.
+- **🔔 Real-time Notifications**: Updates on booking status, payment receipts, and security alerts.
 
 ---
 
 ## 🏗 Project Architecture
 
-```
-Tenlea2/
-├── client/                     # Frontend Application (React + Vite + Tailwind CSS)
-│   ├── public/
-│   │   └── favicon.svg
+```text
+Tenlea/
+├── frontend/                   # Frontend Web Application (React + Vite + Tailwind CSS)
+│   ├── public/                 # Static public assets
 │   ├── src/
-│   │   ├── assets/
-│   │   ├── components/         # Common, Layout, & Home components
-│   │   ├── context/            # React Auth & Global context
-│   │   ├── hooks/              # Custom hooks
-│   │   ├── layouts/            # Page layouts
-│   │   ├── pages/              # Public & Dashboard pages
+│   │   ├── assets/             # Brand logos & icons
+│   │   ├── components/         # Reusable UI components & layouts
+│   │   ├── context/            # Auth & Global application state
+│   │   ├── hooks/              # Custom React hooks
+│   │   ├── layouts/            # Page shell layouts
+│   │   ├── pages/              # Public, Host, Renter & Admin views
 │   │   ├── routes/             # App routing configuration
-│   │   ├── services/           # Axios API client
-│   │   ├── utils/              # Helper functions
-│   │   ├── App.jsx             # Main Router component
-│   │   ├── index.css           # Global Tailwind CSS styles
-│   │   └── main.jsx            # React DOM entry point
-│   ├── .env.example
-│   ├── index.html
-│   ├── package.json
-│   ├── postcss.config.js
-│   ├── tailwind.config.js
-│   └── vite.config.js
+│   │   ├── services/           # Axios HTTP client & API endpoints
+│   │   ├── utils/              # Formatter & helper functions
+│   │   ├── App.jsx             # Root App component
+│   │   ├── index.css           # Tailwind CSS & global styles
+│   │   └── main.jsx            # Application entry point
+│   ├── .env.example            # Sample frontend environment config
+│   ├── index.html              # HTML template
+│   ├── package.json            # Frontend dependencies & scripts
+│   ├── postcss.config.js       # PostCSS config for Tailwind
+│   ├── tailwind.config.js      # Tailwind design system configuration
+│   └── vite.config.js          # Vite build tool setup
 │
-├── server/                     # Backend API (Node.js + Express + MongoDB)
-│   ├── config/                 # DB connection configuration
-│   ├── controllers/            # API request logic
-│   ├── middleware/             # Auth, error, & upload middlewares
-│   ├── models/                 # Mongoose schemas
-│   ├── routes/                 # Express API routes
-│   ├── services/               # Business logic
-│   ├── uploads/                # Local file storage
-│   ├── utils/                  # Helper utilities
-│   ├── .env.example
-│   ├── package.json
-│   └── server.js               # Express entry server
+├── backend/                    # Backend REST API Server (Node.js + Express + MongoDB)
+│   ├── config/                 # Database connection setup
+│   ├── controllers/            # Request handlers & controller logic
+│   ├── middleware/             # Auth, error handling, rate limiting & upload middleware
+│   ├── models/                 # Mongoose schemas (User, Land, Booking, Payment, etc.)
+│   ├── routes/                 # Express API routing tables
+│   ├── services/               # Core business services
+│   ├── uploads/                # Local file storage for images & documents
+│   ├── utils/                  # Utility helpers & validators
+│   ├── .env.example            # Sample backend environment config
+│   ├── package.json            # Backend dependencies & scripts
+│   └── server.js               # Express API entry server
 │
-└── README.md
+├── package.json                # Root package configuration & script runner
+├── start.js                    # Concurrent frontend & backend launcher script
+└── README.md                   # Project documentation
 ```
+
+---
+
+## ⚡ Tech Stack
+
+| Layer | Technologies Used |
+| :--- | :--- |
+| **Frontend** | React 18, Vite, Tailwind CSS, Framer Motion, Lucide Icons, React Router v6, Axios |
+| **Backend** | Node.js, Express.js, MongoDB, Mongoose ORM |
+| **Security & Auth** | JSON Web Tokens (JWT), Bcrypt, Helmet.js, Express Rate Limit |
+| **File Handling** | Multer |
 
 ---
 
@@ -58,66 +83,70 @@ Tenlea2/
 
 ---
 
-### 1. Backend Setup (`/server`)
+### Option A: Run Full Stack Simultaneously (Recommended)
+
+From the root project directory:
 
 ```bash
-# Navigate to server directory
-cd server
-
-# Install dependencies
+# Install dependencies in all packages
 npm install
+npm --prefix backend install
+npm --prefix frontend install
 
-# Setup environment variables
-cp .env.example .env
-
-# Start backend server
-npm run dev
+# Start both backend and frontend concurrently
+npm start
 ```
 
-The Express API server will start on `http://localhost:5000`.
+- **Frontend Application**: `http://localhost:3000`
+- **Backend REST API**: `http://localhost:5000`
 
 ---
 
-### 2. Frontend Setup (`/client`)
+### Option B: Run Services Separately
+
+#### 1. Start Backend Server (`/backend`)
 
 ```bash
-# Open a new terminal and navigate to client directory
-cd client
-
-# Install dependencies
+cd backend
 npm install
-
-# Setup environment variables
 cp .env.example .env
-
-# Start Vite dev server
 npm run dev
 ```
 
-The React frontend web application will start on `http://localhost:3000`.
+#### 2. Start Frontend App (`/frontend`)
+
+```bash
+cd frontend
+npm install
+cp .env.example .env
+npm run dev
+```
 
 ---
 
 ## 🔑 Environment Variables Setup
 
-### Server (`server/.env`)
+### Backend Environment (`backend/.env`)
+
 ```env
 PORT=5000
 NODE_ENV=development
 MONGO_URI=mongodb://localhost:27017/tenlea_db
-JWT_SECRET=tenlea_super_secret_jwt_key_2026_production_ready
+JWT_SECRET=your_jwt_secret_key_here
 JWT_EXPIRE=30d
 CLIENT_URL=http://localhost:3000
-RAZORPAY_KEY_ID=demo_key_id
-RAZORPAY_KEY_SECRET=demo_key_secret
+RAZORPAY_KEY_ID=your_razorpay_key_id
+RAZORPAY_KEY_SECRET=your_razorpay_key_secret
 ```
 
-### Client (`client/.env`)
+### Frontend Environment (`frontend/.env`)
+
 ```env
 VITE_API_BASE_URL=http://localhost:5000/api/v1
 ```
 
 ---
 
-## 🛡 License
+## 📄 License
+
 © 2026 TENLEA PVT. LTD. All Rights Reserved. | Made in India

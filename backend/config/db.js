@@ -7,7 +7,7 @@ const connectDB = async () => {
     });
     console.log(`[MongoDB Connected]: ${conn.connection.host}`);
   } catch (error) {
-    console.warn(`[MongoDB Warning]: Local MongoDB instance not connected. Run 'mongod' or set MONGO_URI in server/.env. Error: ${error.message}`);
+    console.warn(`[MongoDB Warning]: Local MongoDB instance not connected. Run 'mongod' or set MONGO_URI in backend/.env. Error: ${error.message}`);
     console.log(`[Database Notice]: System operates in Demo Mode until MongoDB connection is established.`);
   }
 };

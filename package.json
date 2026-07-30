@@ -7,7 +7,9 @@
   "scripts": {
     "dev": "node start.js",
     "start": "node start.js",
-    "client": "npm --prefix client run dev",
-    "server": "npm --prefix server run dev"
+    "frontend": "npm --prefix frontend run dev",
+    "client": "npm --prefix frontend run dev",
+    "backend": "npm --prefix backend run dev",
+    "server": "npm --prefix backend run dev"
   }
 }
