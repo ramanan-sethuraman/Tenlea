@@ -38,8 +38,8 @@ export const AnimatedBackground = ({
       {showOrbs && (
         <div className="absolute inset-0 overflow-hidden pointer-events-none z-0">
           <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-72 sm:w-[650px] h-72 sm:h-[650px] max-w-full bg-gradient-to-tr from-slate-400/10 via-slate-100/15 to-transparent rounded-full blur-[140px] pointer-events-none animate-ambient-pulse" />
-          <div className="absolute top-1/3 left-1/4 w-60 sm:w-[400px] h-60 sm:h-[400px] max-w-full bg-sky-500/10 rounded-full blur-[130px] pointer-events-none" />
-          <div className="absolute top-1/2 right-1/4 w-64 sm:w-[450px] h-64 sm:h-[450px] max-w-full bg-indigo-500/10 rounded-full blur-[140px] pointer-events-none" />
+          <div className="absolute top-1/3 left-1/4 w-60 sm:w-[400px] h-60 sm:h-[400px] max-w-full bg-zinc-400/8 rounded-full blur-[130px] pointer-events-none" />
+          <div className="absolute top-1/2 right-1/4 w-64 sm:w-[450px] h-64 sm:h-[450px] max-w-full bg-slate-300/8 rounded-full blur-[140px] pointer-events-none" />
         </div>
       )}
 

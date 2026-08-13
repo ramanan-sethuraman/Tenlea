@@ -6,8 +6,8 @@ const morgan = require('morgan');
 const dotenv = require('dotenv');
 const fs = require('fs');
 
-// Load environment variables
-dotenv.config();
+// Load environment variables from backend/.env
+dotenv.config({ path: path.join(__dirname, '.env') });
 
 // Connect Database
 const connectDB = require('./config/db');
