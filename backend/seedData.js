@@ -132,43 +132,39 @@ const populateDatabase = async () => {
     const vehicle1 = await Vehicle.create({
       ownerId: driver1._id,
       vehicleNumber: 'KA-01-MJ-8899',
-      make: 'Hyundai',
+      brand: 'Hyundai',
       model: 'Creta 1.5 SX',
-      color: 'Polar White',
-      vehicleType: 'SUV',
+      vehicleType: '4-Wheeler Car / SUV',
     });
 
     // Create Booking & Agreement
     const booking1 = await Booking.create({
       parkingSpaceId: space1._id,
-      landId: land1._id,
       landownerId: landowner1._id,
       vehicleOwnerId: driver1._id,
       vehicleId: vehicle1._id,
-      bookingType: 'MONTHLY',
       startDate: new Date(),
       endDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+      durationDays: 30,
       totalAmount: 4500,
       paymentStatus: 'PAID',
       bookingStatus: 'ACTIVE',
-      qrCodeData: 'TENLEA-QR-BOOKING-8899-2026',
+      qrCode: 'TENLEA-QR-BOOKING-8899-2026',
     });
 
     await Agreement.create({
       bookingId: booking1._id,
       landownerId: landowner1._id,
       vehicleOwnerId: driver1._id,
-      landId: land1._id,
+      vehicleId: vehicle1._id,
       parkingSpaceId: space1._id,
-      agreementNumber: 'TENLEA-AGR-2026-0089',
+      startDate: new Date(),
+      endDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+      amount: 4500,
       terms: 'Standard TENLEA digital lease terms apply. 30-day notice required for cancellation.',
-      monthlyRent: 4500,
-      securityDeposit: 2000,
-      status: 'EXECUTED',
-      digitallySignedByLandowner: true,
-      digitallySignedByVehicleOwner: true,
-      signedAtLandowner: new Date(),
-      signedAtVehicleOwner: new Date(),
+      landownerAccepted: true,
+      vehicleOwnerAccepted: true,
+      status: 'ACCEPTED_BY_BOTH',
     });
 
     console.log('[Database Engine]: Database populated successfully with initial records!');
