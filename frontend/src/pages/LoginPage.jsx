@@ -6,12 +6,15 @@ import { Mail, Lock, ArrowRight, ShieldCheck, Linkedin, CheckCircle2, Loader2, K
 import { AnimatedBackground } from '../components/common/AnimatedBackground';
 
 export const LoginPage = () => {
+  const navigate = useNavigate();
+  const { login, socialLogin } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [role, setRole] = useState('admin'); // 'admin', 'landowner', 'vehicle'
   const [loading, setLoading] = useState(false);
   const [socialLoading, setSocialLoading] = useState(null); // 'google' | 'linkedin' | null
   const [errorMsg, setErrorMsg] = useState('');
+  const [authSuccess, setAuthSuccess] = useState('');
 
   const handleFormSubmit = async (e) => {
     e.preventDefault();
