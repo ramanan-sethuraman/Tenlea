@@ -11,9 +11,21 @@ dotenv.config();
 
 // Connect Database
 const connectDB = require('./config/db');
-connectDB();
-
 const app = express();
+
+// Ensure Database Connection Middleware
+app.use(async (req, res, next) => {
+  try {
+    await connectDB();
+    next();
+  } catch (err) {
+    console.error('[DB Middleware Error]:', err.message);
+    res.status(503).json({
+      success: false,
+      message: 'Database connection currently initializing. Please try again in a few seconds.'
+    });
+  }
+});
 
 // Security & Middleware
 app.use(helmet({

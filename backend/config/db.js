@@ -5,47 +5,45 @@ const dns = require('dns');
 try {
   dns.setServers(['8.8.8.8', '1.1.1.1']);
 } catch (e) {
-  // Fallback if DNS server custom override is unavailable
+  // Ignore DNS override errors in cloud environments
 }
 
-const populateDatabase = require('../seedData');
+let isConnecting = false;
 
 const connectDB = async () => {
+  // Re-use active connection (Serverless Connection Pooling)
+  if (mongoose.connection.readyState === 1) {
+    return mongoose.connection;
+  }
+
+  if (isConnecting) return;
+  isConnecting = true;
+
   const mongoUri = process.env.MONGO_URI || 'mongodb://localhost:27017/tenlea_db';
 
-  // 1. Try external MONGO_URI if credentials are valid
-  if (!mongoUri.includes('USERNAME') && !mongoUri.includes('YOUR_CLUSTER') && !mongoUri.includes('<db_password>')) {
-    try {
-      const conn = await mongoose.connect(mongoUri, { serverSelectionTimeoutMS: 4000 });
-      console.log(`[MongoDB Connected]: Live Host -> ${conn.connection.host}`);
-      await populateDatabase();
-      return;
-    } catch (error) {
-      console.warn(`[MongoDB Warning]: External MONGO_URI failed (${error.message}). Switching to Embedded Engine...`);
-    }
-  }
-
-  // 2. Try local MongoDB instance
   try {
-    const conn = await mongoose.connect('mongodb://localhost:27017/tenlea_db', { serverSelectionTimeoutMS: 2000 });
-    console.log(`[MongoDB Connected]: Local Instance -> ${conn.connection.host}`);
-    await populateDatabase();
-    return;
-  } catch (err) {
-    console.log(`[Database Engine]: Initializing Embedded In-Memory MongoDB Server...`);
-  }
-
-  // 3. Embedded In-Memory MongoDB Engine Fallback
-  try {
-    const { MongoMemoryServer } = require('mongodb-memory-server');
-    const mongod = await MongoMemoryServer.create();
-    const memoryUri = mongod.getUri();
-    const conn = await mongoose.connect(memoryUri);
-    console.log(`[MongoDB Connected]: Embedded Live Mongo Engine -> ${conn.connection.host}`);
-    await populateDatabase();
+    const conn = await mongoose.connect(mongoUri, {
+      serverSelectionTimeoutMS: 10000,
+    });
+    console.log(`[MongoDB Connected]: Live Host -> ${conn.connection.host}`);
+    isConnecting = false;
+    return conn;
   } catch (error) {
-    console.warn(`[Database Engine Warning]: Embedded Mongo failed (${error.message}). Operating in Demo API Mode.`);
-    mongoose.set('bufferCommands', false);
+    isConnecting = false;
+    console.error(`[MongoDB Error]: Database connection failed: ${error.message}`);
+    
+    // Only attempt embedded fallback in local non-production environments
+    if (process.env.NODE_ENV !== 'production' && !process.env.VERCEL) {
+      try {
+        const { MongoMemoryServer } = require('mongodb-memory-server');
+        const mongod = await MongoMemoryServer.create();
+        const memoryUri = mongod.getUri();
+        return await mongoose.connect(memoryUri);
+      } catch (e) {
+        console.warn(`[Embedded Mongo Fallback Failed]: ${e.message}`);
+      }
+    }
+    throw error;
   }
 };
 
