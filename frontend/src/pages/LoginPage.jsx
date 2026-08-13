@@ -11,24 +11,21 @@ export const LoginPage = () => {
   const [role, setRole] = useState('admin'); // 'admin', 'landowner', 'vehicle'
   const [loading, setLoading] = useState(false);
   const [socialLoading, setSocialLoading] = useState(null); // 'google' | 'linkedin' | null
-  const [authSuccess, setAuthSuccess] = useState(null);
-  const navigate = useNavigate();
-  const { login, socialLogin } = useAuth();
+  const [errorMsg, setErrorMsg] = useState('');
 
   const handleFormSubmit = async (e) => {
     e.preventDefault();
+    setErrorMsg('');
     try {
       setLoading(true);
       if (login) {
         await login(email, password);
       }
-      setAuthSuccess(`Signed in successfully as ${role.toUpperCase()}`);
+      setAuthSuccess(`Signed in successfully! Redirecting...`);
       setTimeout(() => navigate('/'), 800);
     } catch (err) {
       console.error('Login error:', err);
-      // Fallback redirect for seamless demo flow
-      setAuthSuccess('Demo Sign In successful!');
-      setTimeout(() => navigate('/'), 800);
+      setErrorMsg(err.message || 'Invalid email or password. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -52,14 +49,14 @@ export const LoginPage = () => {
   const fillDemoAccount = (demoRole) => {
     setRole(demoRole);
     if (demoRole === 'landowner') {
-      setEmail('santhanam.landowner@tenlea.com');
+      setEmail('sanjay@landowner.com');
       setPassword('password123');
     } else if (demoRole === 'vehicle') {
-      setEmail('driver.karthik@tenlea.com');
+      setEmail('rahul@driver.com');
       setPassword('password123');
     } else {
-      setEmail('admin.support@tenlea.com');
-      setPassword('admin123');
+      setEmail('admin@tenlea.com');
+      setPassword('password123');
     }
   };
 
@@ -270,7 +267,11 @@ export const LoginPage = () => {
                   className="w-full pl-10 pr-4 py-3 rounded-xl bg-zinc-950 border border-zinc-800 text-white placeholder-zinc-500 focus:outline-none focus:border-zinc-500 text-xs"
                 />
               </div>
-            </div>
+            {errorMsg && (
+              <div className="p-3 rounded-xl bg-red-500/10 border border-red-500/30 text-red-400 text-xs text-center font-medium">
+                {errorMsg}
+              </div>
+            )}
 
             <button
               type="submit"
