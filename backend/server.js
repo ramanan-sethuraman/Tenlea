@@ -102,14 +102,16 @@ app.use((err, req, res, next) => {
   });
 });
 
-const PORT = process.env.PORT || 5000;
-
-app.listen(PORT, () => {
-  console.log(`==================================================`);
-  console.log(`🚀 TENLEA Application running on http://localhost:${PORT}`);
-  console.log(`🌐 API Health check: http://localhost:${PORT}/api/v1/health`);
-  console.log(`==================================================`);
-});
+if (!process.env.VERCEL) {
+  const PORT = process.env.PORT || 5000;
+  app.listen(PORT, () => {
+    console.log(`==================================================`);
+    console.log(`🚀 TENLEA Application running on http://localhost:${PORT}`);
+    console.log(`🌐 API Health check: http://localhost:${PORT}/api/v1/health`);
+    console.log(`==================================================`);
+  });
+}
 
 module.exports = app;
+
 
