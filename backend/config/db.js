@@ -19,7 +19,7 @@ const connectDB = async () => {
   if (isConnecting) return;
   isConnecting = true;
 
-  const mongoUri = process.env.MONGO_URI || 'mongodb://localhost:27017/tenlea_db';
+  const mongoUri = process.env.MONGO_URI || 'mongodb+srv://ramanansmaster_db_user:28082006@cluster28.uiwd4et.mongodb.net/tenlea_db?retryWrites=true&w=majority&appName=Cluster28';
 
   try {
     const conn = await mongoose.connect(mongoUri, {
