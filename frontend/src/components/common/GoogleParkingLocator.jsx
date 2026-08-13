@@ -183,46 +183,24 @@ export const GoogleParkingLocator = ({ apiKey = '', mapId = 'DEMO_MAP_ID', initi
   };
 
   return (
-    <div className="rounded-3xl bg-zinc-900 border border-zinc-800 p-6 sm:p-8 shadow-2xl overflow-hidden relative">
+    <div className="rounded-3xl bg-zinc-900 border border-zinc-800 p-4 sm:p-6 lg:p-8 shadow-2xl overflow-hidden relative w-full max-w-full">
       {/* Header Bar */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6 pb-6 border-b border-zinc-800">
         <div>
           <div className="flex items-center gap-2 mb-1">
-            <span className="w-2.5 h-2.5 rounded-full bg-blue-500 animate-pulse"></span>
-            <span className="text-xs font-bold uppercase tracking-widest text-blue-400">
+            <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_10px_rgba(16,185,129,0.9)]"></span>
+            <span className="text-xs font-bold uppercase tracking-widest text-emerald-400">
               Google Maps Interactive Platform
             </span>
           </div>
           <h3 className="text-xl sm:text-2xl font-bold font-display text-white">
-            TENLEA <span className="gradient-text-silver">Vacant Land &amp; Parking Map</span> 🗺️
+            TENLEA <span className="gradient-text-silver">Vacant Land &amp; Parking Map</span>
           </h3>
           <p className="text-xs text-zinc-400 mt-1">
             Explore verified vacant land plots &amp; parking spaces with Google Maps GPS
           </p>
         </div>
 
-        {/* API Key Input Control */}
-        <div className="w-full sm:w-auto flex flex-col sm:flex-row items-center gap-2">
-          <div className="relative w-full sm:w-64">
-            <Key className="absolute left-3 top-2.5 w-4 h-4 text-zinc-400" />
-            <input
-              type="password"
-              placeholder="Paste Google Maps API Key..."
-              value={userApiKey}
-              onChange={(e) => setUserApiKey(e.target.value)}
-              className="w-full pl-9 pr-3 py-2 rounded-xl bg-zinc-950 border border-zinc-800 text-white text-xs focus:outline-none focus:border-blue-500"
-            />
-          </div>
-          {userApiKey ? (
-            <span className="text-[10px] text-emerald-400 font-semibold px-2.5 py-1 rounded-lg bg-emerald-950/80 border border-emerald-800/80 whitespace-nowrap">
-              Google Store Locator Active ✓
-            </span>
-          ) : (
-            <span className="text-[10px] text-blue-400 font-semibold px-2.5 py-1 rounded-lg bg-blue-950/80 border border-blue-800/80 whitespace-nowrap">
-              Google Maps Embed Mode
-            </span>
-          )}
-        </div>
       </div>
 
       {/* Filter & Search Bar Controls */}
@@ -338,7 +316,7 @@ export const GoogleParkingLocator = ({ apiKey = '', mapId = 'DEMO_MAP_ID', initi
                   <span>Navigate</span>
                 </a>
                 <a
-                  href="tel:+919080173002"
+                  href="tel:+919876543210"
                   className="p-2.5 rounded-xl bg-zinc-900 border border-zinc-800 text-white hover:border-zinc-700 transition-colors flex items-center justify-center"
                   title="Call Landowner"
                 >
@@ -381,13 +359,6 @@ export const GoogleParkingLocator = ({ apiKey = '', mapId = 'DEMO_MAP_ID', initi
 
       </div>
 
-      {/* Notice Appendix required by Google Maps Platform */}
-      <div className="mt-6 pt-4 border-t border-zinc-800 text-[10px] text-zinc-500 space-y-1">
-        <p>• Usage of Google Maps Platform products and services may incur costs against your Google Cloud project billing account.</p>
-        <p>• Products Used: Google Maps JavaScript API, Places API, Extended Component Library (`gmpx-store-locator`).</p>
-        <p>• Restrict production keys via: <a href="https://docs.cloud.google.com/api-keys/docs/add-restrictions-api-keys?utm_campaign=gmp_git_agentskills_v1" target="_blank" rel="noopener noreferrer" className="text-blue-400 underline">Google Cloud Console Credentials</a>.</p>
-        <p>• Google-sourced code snippets are provided under Apache 2.0 License. Terms of Service apply: <a href="https://cloud.google.com/maps-platform/terms?utm_campaign=gmp_git_agentskills_v1" target="_blank" rel="noopener noreferrer" className="text-blue-400 underline">https://cloud.google.com/maps-platform/terms</a>.</p>
-      </div>
     </div>
   );
 };

@@ -31,8 +31,11 @@ export default {
         }
       },
       fontFamily: {
-        sans: ['Outfit', 'Inter', 'sans-serif'],
+        sans: ['Raleway', 'Inter', 'sans-serif'],
         display: ['Outfit', 'sans-serif'],
+        serif: ['Cormorant Garamond', 'Playfair Display', 'serif'],
+        coterie: ['Cormorant Garamond', 'Playfair Display', 'serif'],
+        raleway: ['Raleway', 'sans-serif'],
       },
       backgroundImage: {
         'mono-gradient': 'linear-gradient(135deg, #09090b 0%, #18181b 50%, #27272a 100%)',

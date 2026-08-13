@@ -1,26 +1,56 @@
-import React, { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { useNavigate, Link, useSearchParams } from 'react-router-dom';
 import { Logo } from '../components/common/Logo';
 import { useAuth } from '../context/AuthContext';
 import { Mail, Lock, User, Phone, ArrowRight, ShieldCheck, Check, Linkedin, Loader2 } from 'lucide-react';
+import { AnimatedBackground } from '../components/common/AnimatedBackground';
 
 export const RegisterPage = () => {
-  const [role, setRole] = useState('VEHICLE_OWNER'); // VEHICLE_OWNER or LANDOWNER
+  const [searchParams] = useSearchParams();
+  const roleParam = searchParams.get('role');
+  const [role, setRole] = useState(roleParam?.toUpperCase() === 'LANDOWNER' ? 'LANDOWNER' : 'VEHICLE_OWNER');
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [socialLoading, setSocialLoading] = useState(null);
+  const [submitting, setSubmitting] = useState(false);
+  const [errorMsg, setErrorMsg] = useState('');
   const navigate = useNavigate();
   const { registerUser, socialLogin } = useAuth();
 
+  useEffect(() => {
+    if (roleParam) {
+      setRole(roleParam.toUpperCase() === 'LANDOWNER' ? 'LANDOWNER' : 'VEHICLE_OWNER');
+    }
+  }, [roleParam]);
+
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (registerUser) {
-      await registerUser({ name, email, phone, password, role });
+    setErrorMsg('');
+    
+    if (password && confirmPassword && password !== confirmPassword) {
+      setErrorMsg('Passwords do not match. Please re-check your password.');
+      return;
     }
-    navigate('/');
+
+    try {
+      setSubmitting(true);
+      if (registerUser) {
+        await registerUser({ name, email, phone, password, role });
+      }
+      if (role === 'LANDOWNER') {
+        navigate('/dashboard/landowner');
+      } else {
+        navigate('/find-parking');
+      }
+    } catch (err) {
+      console.error('Registration failed:', err);
+      setErrorMsg('Registration failed. Please check your details and try again.');
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   const handleSocialRegister = async (provider) => {
@@ -29,7 +59,11 @@ export const RegisterPage = () => {
       if (socialLogin) {
         await socialLogin(provider, role);
       }
-      navigate('/');
+      if (role === 'LANDOWNER') {
+        navigate('/dashboard/landowner');
+      } else {
+        navigate('/find-parking');
+      }
     } catch (err) {
       console.error('Social register error:', err);
     } finally {
@@ -38,8 +72,8 @@ export const RegisterPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-zinc-950 text-white flex items-center justify-center p-4">
-      <div className="w-full max-w-4xl rounded-3xl card-silver-rim overflow-hidden grid grid-cols-1 md:grid-cols-12 shadow-2xl">
+    <AnimatedBackground variant="glow" className="min-h-screen bg-zinc-950 text-white flex items-center justify-center p-4">
+      <div className="w-full max-w-4xl rounded-3xl card-silver-rim overflow-hidden grid grid-cols-1 md:grid-cols-12 shadow-2xl my-8 mx-auto">
         
         {/* Left Banner */}
         <div className="md:col-span-5 p-8 bg-zinc-950/95 flex flex-col justify-between border-b md:border-b-0 md:border-r border-zinc-800">
@@ -211,12 +245,28 @@ export const RegisterPage = () => {
               </div>
             </div>
 
+            {errorMsg && (
+              <div className="p-2.5 rounded-xl bg-red-500/10 border border-red-500/30 text-red-400 text-xs text-center font-medium">
+                {errorMsg}
+              </div>
+            )}
+
             <button
               type="submit"
-              className="w-full py-3 rounded-xl btn-silver-primary text-zinc-950 font-bold text-xs flex items-center justify-center gap-2 mt-2"
+              disabled={submitting || !!socialLoading}
+              className="w-full py-3 rounded-xl btn-silver-primary text-zinc-950 font-bold text-xs flex items-center justify-center gap-2 mt-2 cursor-pointer disabled:opacity-50"
             >
-              <span>Register Account</span>
-              <ArrowRight className="w-4 h-4 text-zinc-950" />
+              {submitting ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin text-zinc-950" />
+                  <span>Creating Account...</span>
+                </>
+              ) : (
+                <>
+                  <span>Register Account</span>
+                  <ArrowRight className="w-4 h-4 text-zinc-950" />
+                </>
+              )}
             </button>
           </form>
 
@@ -229,6 +279,6 @@ export const RegisterPage = () => {
         </div>
 
       </div>
-    </div>
+    </AnimatedBackground>
   );
 };

@@ -35,11 +35,10 @@ export const Benefits = () => {
             </ul>
 
             <button
-              onClick={() => navigate('/register')}
+              onClick={() => navigate('/register?role=LANDOWNER')}
               className="w-full py-3.5 rounded-xl btn-silver-primary text-zinc-950 font-bold text-xs flex items-center justify-center gap-2"
             >
               <span>List Your Property</span>
-              <ArrowRight className="w-4 h-4 text-zinc-950" />
             </button>
           </div>
 
@@ -71,7 +70,6 @@ export const Benefits = () => {
               className="w-full py-3.5 rounded-xl btn-silver-secondary text-slate-200 font-bold text-xs flex items-center justify-center gap-2"
             >
               <span>Find Parking Near You</span>
-              <ArrowRight className="w-4 h-4 text-slate-200" />
             </button>
           </div>
 

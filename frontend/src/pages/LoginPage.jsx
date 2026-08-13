@@ -3,6 +3,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import { Logo } from '../components/common/Logo';
 import { useAuth } from '../context/AuthContext';
 import { Mail, Lock, ArrowRight, ShieldCheck, Linkedin, CheckCircle2, Loader2, KeyRound } from 'lucide-react';
+import { AnimatedBackground } from '../components/common/AnimatedBackground';
 
 export const LoginPage = () => {
   const [email, setEmail] = useState('');
@@ -63,8 +64,8 @@ export const LoginPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-zinc-950 text-white flex items-center justify-center p-4">
-      <div className="w-full max-w-4xl rounded-3xl card-silver-rim overflow-hidden grid grid-cols-1 md:grid-cols-12 shadow-2xl relative">
+    <AnimatedBackground variant="glow" className="min-h-screen bg-zinc-950 text-white flex items-center justify-center p-4">
+      <div className="w-full max-w-4xl rounded-3xl card-silver-rim overflow-hidden grid grid-cols-1 md:grid-cols-12 shadow-2xl relative my-8 mx-auto">
         
         {/* Left Column - Branding & Info */}
         <div className="md:col-span-5 p-8 bg-zinc-950/95 flex flex-col justify-between border-b md:border-b-0 md:border-r border-zinc-800">
@@ -296,6 +297,6 @@ export const LoginPage = () => {
         </div>
 
       </div>
-    </div>
+    </AnimatedBackground>
   );
 };

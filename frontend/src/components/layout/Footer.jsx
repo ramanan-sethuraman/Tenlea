@@ -1,9 +1,16 @@
 import React from 'react';
 import { Logo } from '../common/Logo';
 import { Twitter, Instagram, Linkedin, Youtube, Phone, Mail, MapPin } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 
 export const Footer = () => {
+  const location = useLocation();
+
+  // Render footer ONLY on the home page ('/')
+  if (location.pathname !== '/') {
+    return null;
+  }
+
   return (
     <footer className="bg-zinc-950 text-zinc-400 pt-16 pb-12 border-t border-zinc-800">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -55,6 +62,7 @@ export const Footer = () => {
             <ul className="space-y-2.5 text-sm">
               <li><Link to="/about" className="hover:text-white transition-colors">About Us</Link></li>
               <li><Link to="/find-parking" className="hover:text-white transition-colors">Find Parking</Link></li>
+              <li><Link to="/agreement-generator" className="hover:text-white transition-colors">Agreement Generator</Link></li>
               <li><Link to="/how-it-works" className="hover:text-white transition-colors">How It Works</Link></li>
               <li><Link to="/why-tenlea" className="hover:text-white transition-colors">Why TENLEA</Link></li>
               <li><Link to="/benefits" className="hover:text-white transition-colors">Benefits</Link></li>
@@ -77,7 +85,7 @@ export const Footer = () => {
               <li><Link to="/contact" className="hover:text-white transition-colors text-slate-200 font-semibold">Contact Page</Link></li>
               <li><a href="tel:+919080173002" className="hover:text-white transition-colors text-xs block">+91 9080173002</a></li>
               <li><a href="mailto:ramanans.master@gmail.com" className="hover:text-white transition-colors text-xs block break-all">ramanans.master@gmail.com</a></li>
-              <li><a href="https://www.linkedin.com/in/ramanan-sethuraman/" target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors text-xs block text-slate-300">LinkedIn Profile</a></li>
+              <li><a href="https://www.linkedin.com/in/ramanan-sethuraman/" target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors text-xs block text-slate-300">Ramanan Sethuraman (Founder)</a></li>
             </ul>
           </div>
 

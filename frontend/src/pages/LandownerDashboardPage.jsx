@@ -2,8 +2,9 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Navbar } from '../components/layout/Navbar';
 import { Footer } from '../components/layout/Footer';
-import { MapPin, ParkingSquare, CalendarCheck, Wallet, Plus, ShieldCheck, CheckCircle2, Building, Inbox } from 'lucide-react';
+import { MapPin, ParkingSquare, CalendarCheck, Wallet, Plus, ShieldCheck, CheckCircle2, Building, Inbox, FileText, Settings } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import api from '../services/api';
 
 export const LandownerDashboardPage = () => {
   const navigate = useNavigate();
@@ -13,19 +14,56 @@ export const LandownerDashboardPage = () => {
   const [properties, setProperties] = useState([]);
   const [bookingRequests, setBookingRequests] = useState([]);
 
+  React.useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const [parkingRes, bookingRes] = await Promise.allSettled([
+          api.get('/parking'),
+          api.get('/bookings'),
+        ]);
+        if (parkingRes.status === 'fulfilled' && parkingRes.value?.data) {
+          const myPlots = parkingRes.value.data.filter(
+            (p) => !p.landownerId || p.landownerId._id === user?._id || p.landownerId === user?._id
+          );
+          setProperties(
+            myPlots.map((p) => ({
+              id: p._id || p.id,
+              title: p.title,
+              location: p.location || p.city,
+              slots: p.availableSlots || 1,
+            }))
+          );
+        }
+        if (bookingRes.status === 'fulfilled' && bookingRes.value?.data) {
+          setBookingRequests(
+            bookingRes.value.data.map((b) => ({
+              id: b._id || b.id,
+              space: b.parkingSpaceId?.title || 'Parking Space',
+              driver: b.vehicleOwnerId?.name || b.vehicleOwnerId?.email || 'Driver',
+              amount: `₹${b.totalAmount || 0}`,
+              status: b.bookingStatus,
+            }))
+          );
+        }
+      } catch (err) {
+        console.error('Failed to fetch landowner data:', err);
+      }
+    };
+    fetchData();
+  }, [user]);
+
   return (
-    <div className="min-h-screen bg-zinc-950 text-white">
+    <div className="min-h-screen bg-zinc-950 text-white flex flex-col justify-between">
       <Navbar />
 
-      <div className="pt-28 pb-20 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        
-        {/* Header Bar */}
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-8 pb-6 border-b border-zinc-800">
+      <main className="grow pt-28 pb-16 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto w-full">
+        {/* Header */}
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8 pb-6 border-b border-zinc-800">
           <div>
-            <div className="flex items-center gap-3">
-              <h1 className="text-2xl font-bold font-display text-white">Landowner Dashboard</h1>
-              <span className="text-[10px] font-extrabold px-3 py-1 rounded-full bg-emerald-950 text-emerald-300 border border-emerald-800">
-                Verified Account ✓
+            <div className="flex items-center space-x-2">
+              <h1 className="text-2xl font-extrabold font-display">Landowner Dashboard</h1>
+              <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-400 border border-blue-500/20">
+                Land & Space Owner
               </span>
             </div>
             <p className="text-xs text-zinc-400 mt-1">
@@ -33,7 +71,7 @@ export const LandownerDashboardPage = () => {
             </p>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center gap-3">
             <button
               onClick={() => navigate('/add-land')}
               className="px-4 py-2.5 rounded-xl btn-silver-primary text-zinc-950 text-xs font-bold flex items-center gap-2 shadow-lg"
@@ -47,6 +85,20 @@ export const LandownerDashboardPage = () => {
             >
               <Plus className="w-4 h-4 text-slate-200" />
               <span>Add Parking Space</span>
+            </button>
+            <button
+              onClick={() => navigate('/agreement-generator')}
+              className="px-4 py-2.5 rounded-xl btn-silver-secondary text-zinc-950 font-bold text-xs flex items-center gap-2"
+            >
+              <FileText className="w-4 h-4 text-zinc-950" />
+              <span>Agreement Generator</span>
+            </button>
+            <button
+              onClick={() => navigate('/settings')}
+              className="px-4 py-2.5 rounded-xl bg-zinc-900 border border-zinc-700 hover:border-zinc-500 text-zinc-200 text-xs font-bold flex items-center gap-2 transition-all cursor-pointer"
+            >
+              <Settings className="w-4 h-4 text-cyan-400" />
+              <span>Settings</span>
             </button>
           </div>
         </div>
@@ -158,7 +210,7 @@ export const LandownerDashboardPage = () => {
           )}
         </div>
 
-      </div>
+      </main>
 
       <Footer />
     </div>

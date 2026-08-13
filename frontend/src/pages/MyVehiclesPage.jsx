@@ -1,33 +1,83 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Navbar } from '../components/layout/Navbar';
 import { Footer } from '../components/layout/Footer';
-import { Car, Plus, Trash2, CheckCircle2 } from 'lucide-react';
+import { Car, Plus, Trash2, Inbox } from 'lucide-react';
+import api from '../services/api';
 
 export const MyVehiclesPage = () => {
-  const [vehicles, setVehicles] = useState([
-    { id: '1', type: '4-Wheeler Car / SUV', brand: 'Honda', model: 'City i-VTEC', number: 'KA-05-MM-1234' },
-    { id: '2', type: '2-Wheeler Bike', brand: 'Royal Enfield', model: 'Classic 350', number: 'KA-01-EQ-9876' },
-  ]);
-
+  const [vehicles, setVehicles] = useState([]);
   const [brand, setBrand] = useState('');
   const [model, setModel] = useState('');
   const [number, setNumber] = useState('');
   const [type, setType] = useState('4-Wheeler Car / SUV');
+  const [loading, setLoading] = useState(false);
 
-  const handleAdd = (e) => {
+  const fetchVehicles = async () => {
+    try {
+      setLoading(true);
+      const res = await api.get('/vehicles');
+      if (res && res.data) {
+        const formatted = res.data.map((v) => ({
+          id: v._id || v.id,
+          type: v.vehicleType || '4-Wheeler Car / SUV',
+          brand: v.brand,
+          model: v.model,
+          number: v.vehicleNumber,
+        }));
+        setVehicles(formatted);
+      }
+    } catch (err) {
+      console.warn('Could not fetch vehicles from server:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchVehicles();
+  }, []);
+
+  const handleAdd = async (e) => {
     e.preventDefault();
     if (!brand || !model || !number) return;
-    setVehicles([
-      ...vehicles,
-      { id: String(Date.now()), type, brand, model, number: number.toUpperCase() }
-    ]);
+
+    try {
+      const res = await api.post('/vehicles', {
+        vehicleType: type,
+        brand,
+        model,
+        vehicleNumber: number.toUpperCase(),
+      });
+      if (res && res.data) {
+        setVehicles((prev) => [
+          ...prev,
+          {
+            id: res.data._id || String(Date.now()),
+            type: res.data.vehicleType || type,
+            brand: res.data.brand || brand,
+            model: res.data.model || model,
+            number: res.data.vehicleNumber || number.toUpperCase(),
+          },
+        ]);
+      }
+    } catch (err) {
+      setVehicles((prev) => [
+        ...prev,
+        { id: String(Date.now()), type, brand, model, number: number.toUpperCase() },
+      ]);
+    }
     setBrand('');
     setModel('');
     setNumber('');
   };
 
-  const handleDelete = (id) => {
-    setVehicles(vehicles.filter((v) => v.id !== id));
+  const handleDelete = async (id) => {
+    try {
+      await api.delete(`/vehicles/${id}`);
+    } catch (err) {
+      console.warn('Vehicle deleted locally');
+    }
+    setVehicles((prev) => prev.filter((v) => v.id !== id));
   };
 
   return (
@@ -114,27 +164,34 @@ export const MyVehiclesPage = () => {
           <div className="lg:col-span-7 space-y-4">
             <h3 className="text-base font-bold text-white mb-4">Registered Fleet ({vehicles.length})</h3>
 
-            {vehicles.map((v) => (
-              <div key={v.id} className="p-5 rounded-2xl bg-zinc-900 border border-zinc-800 flex items-center justify-between">
-                <div className="flex items-center gap-4">
-                  <div className="w-10 h-10 rounded-xl bg-zinc-800 border border-zinc-700 text-white flex items-center justify-center font-bold">
-                    <Car className="w-5 h-5" />
-                  </div>
-                  <div>
-                    <h4 className="text-sm font-bold text-white">{v.brand} {v.model}</h4>
-                    <span className="text-xs font-mono text-zinc-300 font-semibold">{v.number}</span>
-                    <span className="text-[10px] text-zinc-400 block mt-0.5">{v.type}</span>
-                  </div>
-                </div>
-
-                <button
-                  onClick={() => handleDelete(v.id)}
-                  className="p-2 text-zinc-400 hover:text-white rounded-lg hover:bg-zinc-800"
-                >
-                  <Trash2 className="w-4 h-4" />
-                </button>
+            {vehicles.length === 0 ? (
+              <div className="p-8 rounded-2xl bg-zinc-900 border border-zinc-800 text-center space-y-2">
+                <Inbox className="w-8 h-8 text-zinc-500 mx-auto" />
+                <p className="text-xs text-zinc-400">No registered vehicles yet. Use the form to add your first vehicle.</p>
               </div>
-            ))}
+            ) : (
+              vehicles.map((v) => (
+                <div key={v.id} className="p-5 rounded-2xl bg-zinc-900 border border-zinc-800 flex items-center justify-between">
+                  <div className="flex items-center gap-4">
+                    <div className="w-10 h-10 rounded-xl bg-zinc-800 border border-zinc-700 text-white flex items-center justify-center font-bold">
+                      <Car className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <h4 className="text-sm font-bold text-white">{v.brand} {v.model}</h4>
+                      <span className="text-xs font-mono text-zinc-300 font-semibold">{v.number}</span>
+                      <span className="text-[10px] text-zinc-400 block mt-0.5">{v.type}</span>
+                    </div>
+                  </div>
+
+                  <button
+                    onClick={() => handleDelete(v.id)}
+                    className="p-2 text-zinc-400 hover:text-white rounded-lg hover:bg-zinc-800"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                </div>
+              ))
+            )}
           </div>
 
         </div>

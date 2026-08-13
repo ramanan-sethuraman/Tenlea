@@ -68,31 +68,6 @@ export const HowItWorksPage = () => {
         </div>
       </div>
 
-      {/* CTA Section */}
-      <div className="py-20 bg-zinc-950 text-center">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 space-y-6">
-          <h2 className="text-3xl font-extrabold font-display">Ready to Experience TENLEA?</h2>
-          <p className="text-zinc-400 text-sm max-w-xl mx-auto">
-            Join thousands of hosts and vehicle owners across India transforming urban mobility.
-          </p>
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-2">
-            <button
-              onClick={() => navigate('/find-parking')}
-              className="px-6 py-3.5 rounded-xl btn-silver-primary text-zinc-950 font-bold text-xs flex items-center gap-2"
-            >
-              <span>Find Parking Now</span>
-              <ArrowRight className="w-4 h-4 text-zinc-950" />
-            </button>
-            <button
-              onClick={() => navigate('/register')}
-              className="px-6 py-3.5 rounded-xl btn-silver-secondary text-white font-bold text-xs"
-            >
-              List Your Property
-            </button>
-          </div>
-        </div>
-      </div>
-
       <Footer />
     </div>
   );

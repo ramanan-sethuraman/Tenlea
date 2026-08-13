@@ -17,12 +17,15 @@ import { AdminDashboardPage } from './pages/AdminDashboardPage';
 import { AddLandPage } from './pages/AddLandPage';
 import { AddParkingSpacePage } from './pages/AddParkingSpacePage';
 import { MyVehiclesPage } from './pages/MyVehiclesPage';
-import { KycUploadPage } from './pages/KycUploadPage';
+import { AgreementGeneratorPage } from './pages/AgreementGeneratorPage';
+import { SettingsPage } from './pages/SettingsPage';
+import { ScrollToTop } from './components/common/ScrollToTop';
 
 export default function App() {
   return (
     <AuthProvider>
       <BrowserRouter>
+        <ScrollToTop />
         <Routes>
           <Route path="/" element={<LandingPage />} />
           <Route path="/about" element={<AboutPage />} />
@@ -40,7 +43,10 @@ export default function App() {
           <Route path="/add-land" element={<AddLandPage />} />
           <Route path="/add-parking" element={<AddParkingSpacePage />} />
           <Route path="/my-vehicles" element={<MyVehiclesPage />} />
-          <Route path="/kyc" element={<KycUploadPage />} />
+          <Route path="/kyc" element={<AgreementGeneratorPage />} />
+          <Route path="/agreement-generator" element={<AgreementGeneratorPage />} />
+          <Route path="/agreements" element={<AgreementGeneratorPage />} />
+          <Route path="/settings" element={<SettingsPage />} />
           <Route path="*" element={<LandingPage />} />
         </Routes>
       </BrowserRouter>

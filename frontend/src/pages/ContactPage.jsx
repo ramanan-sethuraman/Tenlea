@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { Navbar } from '../components/layout/Navbar';
 import { Footer } from '../components/layout/Footer';
-import { IndiaMap } from '../components/common/IndiaMap';
 import { Phone, Mail, MapPin, Send, MessageSquare, CheckCircle2, Linkedin } from 'lucide-react';
 
 export const ContactPage = () => {
@@ -34,79 +33,86 @@ export const ContactPage = () => {
       </div>
 
       {/* Contact Cards & Form Section */}
-      <div className="py-20 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-12">
+      <div className="py-16 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-stretch">
           
           {/* Left Column: Direct Contact Info */}
-          <div className="lg:col-span-5 space-y-6">
-            <h2 className="text-2xl font-bold font-display text-white mb-6">Direct Contact Channels</h2>
-
-            {/* Phone Card */}
-            <div className="p-6 rounded-3xl card-silver-rim flex items-start gap-4">
-              <div className="p-3.5 rounded-2xl bg-zinc-900 text-slate-100 border border-slate-300/30 shrink-0">
-                <Phone className="w-6 h-6" />
-              </div>
-              <div>
-                <span className="text-xs text-zinc-400 font-bold uppercase tracking-wider block">Call / WhatsApp</span>
-                <a href="tel:+919080173002" className="text-lg font-extrabold text-white hover:text-slate-300 transition-colors">
-                  +91 9080173002
-                </a>
-                <p className="text-xs text-zinc-400 mt-1">Direct support & WhatsApp query line</p>
-              </div>
+          <div className="lg:col-span-5 flex flex-col justify-between">
+            <div>
+              <h2 className="text-2xl font-bold font-display text-white mb-2">Direct Contact Channels</h2>
+              <p className="text-xs text-zinc-400 mb-6">Reach out to us directly through any of our official channels.</p>
             </div>
 
-            {/* Email Card */}
-            <div className="p-6 rounded-3xl card-silver-rim flex items-start gap-4">
-              <div className="p-3.5 rounded-2xl bg-zinc-900 text-slate-100 border border-slate-300/30 shrink-0">
-                <Mail className="w-6 h-6" />
+            <div className="space-y-4 flex-1 flex flex-col justify-between">
+              {/* Call / WhatsApp Card */}
+              <div className="p-5 rounded-3xl card-silver-rim flex items-center gap-4">
+                <div className="p-3 rounded-2xl bg-zinc-900 text-slate-100 border border-slate-300/30 shrink-0">
+                  <Phone className="w-5 h-5" />
+                </div>
+                <div>
+                  <span className="text-[10px] text-zinc-400 font-bold uppercase tracking-wider block">Call / WhatsApp</span>
+                  <a href="tel:+919080173002" className="text-base font-extrabold text-white hover:text-slate-300 transition-colors">
+                    +91 9080173002
+                  </a>
+                  <p className="text-xs text-zinc-400 mt-0.5">Direct support & WhatsApp query line</p>
+                </div>
               </div>
-              <div>
-                <span className="text-xs text-zinc-400 font-bold uppercase tracking-wider block">Official Email</span>
-                <a href="mailto:ramanans.master@gmail.com" className="text-base font-extrabold text-white hover:text-slate-300 transition-colors break-all">
-                  ramanans.master@gmail.com
-                </a>
-                <p className="text-xs text-zinc-400 mt-1">For general inquiries & partnership support</p>
-              </div>
-            </div>
 
-            {/* LinkedIn Card */}
-            <div className="p-6 rounded-3xl card-silver-rim flex items-start gap-4">
-              <div className="p-3.5 rounded-2xl bg-zinc-900 text-slate-100 border border-slate-300/30 shrink-0">
-                <Linkedin className="w-6 h-6" />
+              {/* Email Card */}
+              <div className="p-5 rounded-3xl card-silver-rim flex items-center gap-4">
+                <div className="p-3 rounded-2xl bg-zinc-900 text-slate-100 border border-slate-300/30 shrink-0">
+                  <Mail className="w-5 h-5" />
+                </div>
+                <div>
+                  <span className="text-[10px] text-zinc-400 font-bold uppercase tracking-wider block">Official Email</span>
+                  <a href="mailto:ramanans.master@gmail.com" className="text-sm font-extrabold text-white hover:text-slate-300 transition-colors break-all">
+                    ramanans.master@gmail.com
+                  </a>
+                  <p className="text-xs text-zinc-400 mt-0.5">For general inquiries & partnership support</p>
+                </div>
               </div>
-              <div>
-                <span className="text-xs text-zinc-400 font-bold uppercase tracking-wider block">LinkedIn Profile</span>
-                <a
-                  href="https://www.linkedin.com/in/ramanan-sethuraman/"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-base font-extrabold text-white hover:text-slate-300 transition-colors break-all"
-                >
-                  Ramanan Sethuraman
-                </a>
-                <p className="text-xs text-zinc-400 mt-1">Connect with us on LinkedIn</p>
-              </div>
-            </div>
 
-            {/* Location Card */}
-            <div className="p-6 rounded-3xl card-silver-rim flex items-start gap-4">
-              <div className="p-3.5 rounded-2xl bg-zinc-900 text-slate-100 border border-slate-300/30 shrink-0">
-                <MapPin className="w-6 h-6" />
+              {/* LinkedIn Card */}
+              <div className="p-5 rounded-3xl card-silver-rim flex items-center gap-4">
+                <div className="p-3 rounded-2xl bg-zinc-900 text-slate-100 border border-slate-300/30 shrink-0">
+                  <Linkedin className="w-5 h-5" />
+                </div>
+                <div>
+                  <span className="text-[10px] text-zinc-400 font-bold uppercase tracking-wider block">Founder & Leadership</span>
+                  <a
+                    href="https://www.linkedin.com/in/ramanan-sethuraman/"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-sm font-extrabold text-white hover:text-slate-300 transition-colors break-all"
+                  >
+                    Ramanan Sethuraman (Founder)
+                  </a>
+                  <p className="text-xs text-zinc-400 mt-0.5">Connect with the founder on LinkedIn</p>
+                </div>
               </div>
-              <div>
-                <span className="text-xs text-zinc-400 font-bold uppercase tracking-wider block">Headquarters</span>
-                <span className="text-sm font-bold text-white block mt-1">Chennai, Tamil Nadu, India 🇮🇳</span>
-                <p className="text-xs text-zinc-400 mt-1">Serving all major urban hubs in South & West India</p>
+
+              {/* Location Card */}
+              <div className="p-5 rounded-3xl card-silver-rim flex items-center gap-4">
+                <div className="p-3 rounded-2xl bg-zinc-900 text-slate-100 border border-slate-300/30 shrink-0">
+                  <MapPin className="w-5 h-5" />
+                </div>
+                <div>
+                  <span className="text-[10px] text-zinc-400 font-bold uppercase tracking-wider block">Headquarters</span>
+                  <span className="text-xs font-bold text-white block mt-0.5">Chennai, Tamil Nadu, India 🇮🇳</span>
+                  <p className="text-xs text-zinc-400 mt-0.5">Serving all major urban hubs in South & West India</p>
+                </div>
               </div>
             </div>
 
           </div>
 
           {/* Right Column: Contact Message Form */}
-          <div className="lg:col-span-7">
-            <div className="p-8 sm:p-10 rounded-3xl bg-zinc-900 border border-zinc-800 shadow-2xl">
-              <h2 className="text-2xl font-bold font-display text-white mb-2">Send Us a Message</h2>
-              <p className="text-xs text-zinc-400 mb-8">Fill in your information and we will respond as soon as possible.</p>
+          <div className="lg:col-span-7 flex flex-col">
+            <div className="p-8 sm:p-10 rounded-3xl bg-zinc-900 border border-zinc-800 shadow-2xl flex-1 flex flex-col justify-between">
+              <div>
+                <h2 className="text-2xl font-bold font-display text-white mb-2">Send Us a Message</h2>
+                <p className="text-xs text-zinc-400 mb-6">Fill in your information and we will respond as soon as possible.</p>
+              </div>
 
               {submitted ? (
                 <div className="p-8 rounded-2xl bg-zinc-950 border border-slate-300/30 text-center space-y-3">
@@ -145,7 +151,7 @@ export const ContactPage = () => {
                       <input
                         type="tel"
                         required
-                        placeholder="+91 9080173002"
+                        placeholder="+91 XXXXXXXXXX"
                         value={formData.phone}
                         onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
                         className="w-full px-4 py-3 rounded-xl bg-zinc-950 border border-zinc-800 text-white text-xs focus:outline-none focus:border-zinc-500"
@@ -190,11 +196,6 @@ export const ContactPage = () => {
             </div>
           </div>
 
-        </div>
-
-        {/* Interactive India Map Component */}
-        <div className="mt-16">
-          <IndiaMap />
         </div>
 
       </div>

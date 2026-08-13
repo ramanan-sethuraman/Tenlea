@@ -41,8 +41,8 @@ exports.getAdminDashboard = async (req, res, next) => {
         pendingListings,
         activeBookings,
         completedBookings,
-        totalRevenue: totalPayments[0]?.totalRevenue || 289000,
-        totalGross: totalPayments[0]?.totalGross || 2450000,
+        totalRevenue: totalPayments[0]?.totalRevenue || 0,
+        totalGross: totalPayments[0]?.totalGross || 0,
         pendingDisputes,
       },
     });

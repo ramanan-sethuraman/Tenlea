@@ -1,12 +1,15 @@
 import React, { useState, useEffect } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams, useNavigate } from 'react-router-dom';
 import { Navbar } from '../components/layout/Navbar';
 import { Footer } from '../components/layout/Footer';
 import { IndiaMap } from '../components/common/IndiaMap';
 import { Search, MapPin, Star, ShieldCheck, Car, Calendar, CheckCircle2, Loader2, Map } from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
 import api from '../services/api';
 
 export const FindParkingPage = () => {
+  const { user, loading: authLoading } = useAuth();
+  const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const initialCity = searchParams.get('city') || 'Chennai';
   const [city, setCity] = useState(initialCity);
@@ -15,141 +18,13 @@ export const FindParkingPage = () => {
   const [selectedCityFilter, setSelectedCityFilter] = useState(initialCity);
   const [loading, setLoading] = useState(false);
 
-  const defaultListings = [
-    // Chennai Listings
-    {
-      id: 'chn-1',
-      city: 'Chennai',
-      title: 'T. Nagar Prime Commercial Land Plot (2,400 sq.ft)',
-      location: 'Usman Road, T. Nagar, Chennai',
-      priceDay: '₹300 / day',
-      priceMonth: '₹4,000 / mo',
-      rating: 4.9,
-      reviewsCount: 38,
-      amenities: ['2,400 sq.ft Open Land', 'CCTV 24/7', 'Gated Security Boundary', 'Automated QR Gate'],
-      image: 'https://images.unsplash.com/photo-1506521781263-d8422e82f27a?auto=format&fit=crop&w=600&q=80',
-      host: 'Santhanam Ramanathan (Landowner)',
-      type: 'Vacant Land / Open Plot',
-    },
-    {
-      id: 'chn-2',
-      city: 'Chennai',
-      title: 'Velachery Main Road Open Gated Land Plot',
-      location: 'Near Vijaya Nagar Bus Stand, Velachery, Chennai',
-      priceDay: '₹220 / day',
-      priceMonth: '₹3,000 / mo',
-      rating: 4.8,
-      reviewsCount: 29,
-      amenities: ['1,800 sq.ft Open Acre', '24/7 Access', 'Gated Fence', 'EV Charging Point', 'Night Guard'],
-      image: 'https://images.unsplash.com/photo-1590674899484-d5640e854abe?auto=format&fit=crop&w=600&q=80',
-      host: 'Karthik Subramanian (Landowner)',
-      type: 'Vacant Land / Open Plot',
-    },
-    {
-      id: 'chn-3',
-      city: 'Chennai',
-      title: 'OMR IT Corridor (Perungudi) Commercial Acre Ground',
-      location: 'Phase 1 OMR, Perungudi, Chennai',
-      priceDay: '₹250 / day',
-      priceMonth: '₹3,500 / mo',
-      rating: 5.0,
-      reviewsCount: 42,
-      amenities: ['3,500 sq.ft Heavy Fleet Plot', 'CCTV 24/7', 'EV Fast Charger', 'Floodlights'],
-      image: 'https://images.unsplash.com/photo-1573348722427-f1d6819fdf98?auto=format&fit=crop&w=600&q=80',
-      host: 'Meenakshi Sundaram (Landowner)',
-      type: 'Commercial Fleet Ground',
-    },
-    {
-      id: 'chn-4',
-      city: 'Chennai',
-      title: 'Anna Nagar West Private Covered Garage & Plot',
-      location: '2nd Avenue, Anna Nagar West, Chennai',
-      priceDay: '₹350 / day',
-      priceMonth: '₹4,800 / mo',
-      rating: 4.9,
-      reviewsCount: 19,
-      amenities: ['Covered Canopy Shed', 'Individual Gate Lock', 'CCTV 24/7'],
-      image: 'https://images.unsplash.com/photo-1506521781263-d8422e82f27a?auto=format&fit=crop&w=600&q=80',
-      host: 'Venkatesh Iyer (Verified Host)',
-      type: 'Covered Garage',
-    },
-    {
-      id: 'chn-5',
-      city: 'Chennai',
-      title: 'Guindy Industrial Estate Gated Land Space',
-      location: 'Guindy Industrial Estate, Chennai',
-      priceDay: '₹280 / day',
-      priceMonth: '₹3,800 / mo',
-      rating: 4.7,
-      reviewsCount: 22,
-      amenities: ['5,000 sq.ft Vacant Industrial Ground', '24/7 Guarded Entry', 'QR Check-In'],
-      image: 'https://images.unsplash.com/photo-1590674899484-d5640e854abe?auto=format&fit=crop&w=600&q=80',
-      host: 'Nitin Rajan (Landowner)',
-      type: 'Vacant Land / Open Plot',
-    },
+  useEffect(() => {
+    if (!authLoading && !user) {
+      navigate('/login?role=vehicle');
+    }
+  }, [user, authLoading, navigate]);
 
-    // Bengaluru Listings
-    {
-      id: 'blr-1',
-      city: 'Bengaluru',
-      title: 'Indiranagar 100ft Road Prime Vacant Plot',
-      location: 'Indiranagar, Bengaluru',
-      priceDay: '₹350 / day',
-      priceMonth: '₹4,500 / mo',
-      rating: 4.9,
-      reviewsCount: 24,
-      amenities: ['2,000 sq.ft Corner Land Plot', 'CCTV 24/7', 'Gated Security', 'QR Gate'],
-      image: 'https://images.unsplash.com/photo-1506521781263-d8422e82f27a?auto=format&fit=crop&w=600&q=80',
-      host: 'Rajesh Verma (Landowner)',
-      type: 'Vacant Land / Open Plot',
-    },
-    {
-      id: 'blr-2',
-      city: 'Bengaluru',
-      title: 'Koramangala 5th Block Open Driveway & Yard',
-      location: 'Koramangala, Bengaluru',
-      priceDay: '₹250 / day',
-      priceMonth: '₹3,200 / mo',
-      rating: 4.8,
-      reviewsCount: 18,
-      amenities: ['1,200 sq.ft Yard Space', '24/7 Access', 'Gated Boundary', 'Security Guard'],
-      image: 'https://images.unsplash.com/photo-1590674899484-d5640e854abe?auto=format&fit=crop&w=600&q=80',
-      host: 'Ananya Patel (Landowner)',
-      type: 'Private Driveway',
-    },
-    {
-      id: 'blr-3',
-      city: 'Bengaluru',
-      title: 'HSR Layout Sector 1 Secured Open Ground',
-      location: 'HSR Layout, Bengaluru',
-      priceDay: '₹200 / day',
-      priceMonth: '₹2,800 / mo',
-      rating: 5.0,
-      reviewsCount: 31,
-      amenities: ['3,000 sq.ft Vacant Plot', 'CCTV 24/7', 'EV Charging', 'High Floodlights'],
-      image: 'https://images.unsplash.com/photo-1573348722427-f1d6819fdf98?auto=format&fit=crop&w=600&q=80',
-      host: 'Vikram Sengupta (Landowner)',
-      type: 'Vacant Land / Open Plot',
-    },
-
-    // Mumbai Listings
-    {
-      id: 'mum-1',
-      city: 'Mumbai',
-      title: 'Bandra West Hill Road Private Plot & Garage',
-      location: 'Bandra West, Mumbai',
-      priceDay: '₹450 / day',
-      priceMonth: '₹6,500 / mo',
-      rating: 4.9,
-      reviewsCount: 35,
-      amenities: ['1,500 sq.ft Secured Land Lot', 'Security Guard', 'CCTV', 'Automated Barrier'],
-      image: 'https://images.unsplash.com/photo-1506521781263-d8422e82f27a?auto=format&fit=crop&w=600&q=80',
-      host: 'Sameer Merchant (Landowner)',
-      type: 'Vacant Land / Open Plot',
-    },
-  ];
-
-  const [allListings, setAllListings] = useState(defaultListings);
+  const [allListings, setAllListings] = useState([]);
 
   useEffect(() => {
     const urlCity = searchParams.get('city');
@@ -163,36 +38,31 @@ export const FindParkingPage = () => {
     const fetchLiveSpaces = async () => {
       try {
         setLoading(true);
-        const res = await api.get('/parking', { params: { city: selectedCityFilter } });
-        if (res && res.data && res.data.length > 0) {
+        const res = await api.get('/parking', { params: { city: selectedCityFilter === 'All' ? '' : selectedCityFilter } });
+        if (res && res.data) {
           const formatted = res.data.map((item) => ({
             id: item._id || item.id,
-            city: item.city || (item.location && item.location.includes('Chennai') ? 'Chennai' : 'Bengaluru'),
+            city: item.city || 'India',
             title: item.title,
             location: item.location || item.city || 'India',
-            priceDay: `₹${item.pricePerDay || 250} / day`,
-            priceMonth: `₹${item.pricePerMonth || 3500} / mo`,
-            rating: item.rating || 4.9,
-            reviewsCount: item.reviewsCount || 25,
-            amenities: item.amenities || ['CCTV 24/7', 'Gated Security'],
+            priceDay: `₹${item.pricePerDay || 0} / day`,
+            priceMonth: `₹${item.pricePerMonth || 0} / mo`,
+            rating: item.rating || 5.0,
+            reviewsCount: item.reviewsCount || 0,
+            amenities: item.amenities || [],
             image: item.images && item.images[0] && item.images[0].startsWith('http')
               ? item.images[0]
               : 'https://images.unsplash.com/photo-1506521781263-d8422e82f27a?auto=format&fit=crop&w=600&q=80',
             host: item.landownerId?.name || 'Verified Host',
-            type: item.spaceSize || 'Covered Garage',
+            type: item.spaceSize || 'Parking Space',
           }));
-
-          // Merge with default seed list to ensure zero empty state
-          const merged = [...formatted];
-          defaultListings.forEach((def) => {
-            if (!merged.some((m) => m.id === def.id || m.title === def.title)) {
-              merged.push(def);
-            }
-          });
-          setAllListings(merged);
+          setAllListings(formatted);
+        } else {
+          setAllListings([]);
         }
       } catch (err) {
-        console.warn('Backend API connection fallback to demo listings.');
+        console.error('Error fetching parking spaces:', err);
+        setAllListings([]);
       } finally {
         setLoading(false);
       }

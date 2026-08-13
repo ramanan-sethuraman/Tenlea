@@ -1,4 +1,5 @@
 const jwt = require('jsonwebtoken');
+const mongoose = require('mongoose');
 const User = require('../models/User');
 
 const generateToken = (id) => {
@@ -14,6 +15,13 @@ const generateToken = (id) => {
 // @access  Public
 exports.register = async (req, res, next) => {
   try {
+    if (mongoose.connection.readyState !== 1) {
+      return res.status(503).json({
+        success: false,
+        message: 'MongoDB is not connected. Please set your MONGO_URI in backend/.env with your database credentials.',
+      });
+    }
+
     const { name, email, phone, password, role } = req.body;
 
     if (!name || !email || !phone || !password) {
@@ -60,6 +68,13 @@ exports.register = async (req, res, next) => {
 // @access  Public
 exports.login = async (req, res, next) => {
   try {
+    if (mongoose.connection.readyState !== 1) {
+      return res.status(503).json({
+        success: false,
+        message: 'MongoDB is not connected. Please set your MONGO_URI in backend/.env with your database credentials.',
+      });
+    }
+
     const { email, password } = req.body;
 
     if (!email || !password) {
