@@ -92,7 +92,7 @@ export const VehicleOwnerDashboardPage = () => {
       } catch (err) {
         console.error('Error fetching parking spaces:', err);
         setAllListings([]);
-      } font-medium {
+      } finally {
         setSearchLoading(false);
       }
     };

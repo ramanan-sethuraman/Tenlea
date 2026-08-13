@@ -277,6 +277,7 @@ export const LoginPage = () => {
                   className="w-full pl-10 pr-4 py-3 rounded-xl bg-zinc-950 border border-zinc-800 text-white placeholder-zinc-500 focus:outline-none focus:border-zinc-500 text-xs"
                 />
               </div>
+            </div>
             {errorMsg && (
               <div className="p-3 rounded-xl bg-red-500/10 border border-red-500/30 text-red-400 text-xs text-center font-medium">
                 {errorMsg}
