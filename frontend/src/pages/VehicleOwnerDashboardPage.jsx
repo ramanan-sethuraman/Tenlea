@@ -396,19 +396,19 @@ export const VehicleOwnerDashboardPage = () => {
             />
           </div>
 
-          {/* Real-time Parking Spaces Listing Cards */}
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-            <div className="lg:col-span-8 space-y-4">
-              <div className="flex items-center justify-between">
-                <h3 className="text-base font-bold text-white flex items-center gap-2">
-                  <span>{filteredListings.length} Verified Parking Plots Available</span>
-                  <span className="text-xs font-normal text-zinc-400">in {selectedCityFilter || 'Selected Region'}</span>
-                </h3>
-                {searchLoading && <Loader2 className="w-4 h-4 animate-spin text-slate-300" />}
-              </div>
+          {/* Real-time Parking Spaces Listing Cards - Full Width Grid */}
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <h3 className="text-base font-bold text-white flex items-center gap-2">
+                <span>{filteredListings.length} Verified Parking Plots Available</span>
+                <span className="text-xs font-normal text-zinc-400">in {selectedCityFilter || 'Selected Region'}</span>
+              </h3>
+              {searchLoading && <Loader2 className="w-4 h-4 animate-spin text-slate-300" />}
+            </div>
 
-              {filteredListings.length > 0 ? (
-                filteredListings.map((item) => (
+            {filteredListings.length > 0 ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {filteredListings.map((item) => (
                   <div key={item.id} className="p-6 rounded-3xl card-silver-rim flex flex-col sm:flex-row gap-6 hover:border-zinc-700 transition-all">
                     <div className="w-full sm:w-48 h-44 rounded-2xl overflow-hidden relative shrink-0">
                       <img
@@ -462,51 +462,21 @@ export const VehicleOwnerDashboardPage = () => {
                       </div>
                     </div>
                   </div>
-                ))
-              ) : (
-                <div className="p-10 rounded-3xl bg-zinc-900/90 text-center border border-zinc-800 space-y-3">
-                  <MapPin className="w-10 h-10 text-zinc-500 mx-auto" />
-                  <h4 className="text-base font-bold text-white">No parking plots found in "{selectedCityFilter}"</h4>
-                  <p className="text-xs text-zinc-400">Try switching to Chennai or Bengaluru.</p>
-                  <button
-                    onClick={() => handleCityPillClick('Chennai')}
-                    className="px-4 py-2 rounded-xl btn-silver-primary text-zinc-950 font-bold text-xs"
-                  >
-                    View Chennai Land Plots
-                  </button>
-                </div>
-              )}
-            </div>
-
-            {/* Right Column: OpenStreetMap Pin Visualizer */}
-            <div className="lg:col-span-4 rounded-3xl card-silver-rim p-6 flex flex-col justify-between min-h-[440px]">
-              <div>
-                <div className="flex items-center justify-between mb-2">
-                  <h4 className="text-base font-bold text-white">Spatial Map View</h4>
-                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-zinc-900 border border-slate-300/30 text-slate-300">
-                    {selectedCityFilter || 'India'}
-                  </span>
-                </div>
-                <p className="text-xs text-zinc-400 mb-4">
-                  OpenStreetMap real-time spatial pins for {selectedCityFilter || 'selected region'}.
-                </p>
-                
-                <div className="w-full h-80 rounded-2xl bg-zinc-950 border border-slate-300/20 relative overflow-hidden flex items-center justify-center text-center p-4">
-                  <div className="space-y-3">
-                    <MapPin className="w-10 h-10 text-white mx-auto animate-bounce" />
-                    <div className="text-xs font-bold text-white">OpenStreetMap / Leaflet Container</div>
-                    <div className="text-[11px] text-zinc-300 font-mono">
-                      📍 {filteredListings.length} Active Marker Pins in {selectedCityFilter || 'India'}
-                    </div>
-                  </div>
-                </div>
+                ))}
               </div>
-
-              <div className="pt-4 text-xs text-zinc-400 text-center flex items-center justify-center gap-1">
-                <CheckCircle2 className="w-3.5 h-3.5 text-slate-300" />
-                <span>Zero-cost OpenStreetMap integration without external API fees</span>
+            ) : (
+              <div className="p-10 rounded-3xl bg-zinc-900/90 text-center border border-zinc-800 space-y-3">
+                <MapPin className="w-10 h-10 text-zinc-500 mx-auto" />
+                <h4 className="text-base font-bold text-white">No parking plots found in "{selectedCityFilter}"</h4>
+                <p className="text-xs text-zinc-400">Try switching to Chennai or Bengaluru.</p>
+                <button
+                  onClick={() => handleCityPillClick('Chennai')}
+                  className="px-4 py-2 rounded-xl btn-silver-primary text-zinc-950 font-bold text-xs cursor-pointer"
+                >
+                  View Chennai Land Plots
+                </button>
               </div>
-            </div>
+            )}
           </div>
 
         </div>
