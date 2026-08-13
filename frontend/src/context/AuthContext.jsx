@@ -122,15 +122,14 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  const socialLogin = async (provider, requestedRole = 'ADMIN') => {
-    const roleUpper = (requestedRole || 'ADMIN').toUpperCase();
+  const socialLogin = async (provider, requestedRole = 'VEHICLE_OWNER') => {
+    const roleUpper = (requestedRole || 'VEHICLE_OWNER').toUpperCase();
     const mockUser = {
       id: `usr_${provider}_${Date.now()}`,
-      name: 'Ryan',
-      fullName: 'Ryan',
-      username: 'ryan',
-      email: 'ryan@tenlea.com',
-      role: roleUpper === 'LANDOWNER' ? 'ADMIN' : roleUpper,
+      name: `${provider.charAt(0).toUpperCase() + provider.slice(1)} User`,
+      username: `${provider.toLowerCase()}_user`,
+      email: `user_${Date.now()}@${provider}.com`,
+      role: roleUpper,
       provider: provider,
       verified: true,
     };
