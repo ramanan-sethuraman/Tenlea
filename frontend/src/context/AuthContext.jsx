@@ -54,15 +54,19 @@ export const AuthProvider = ({ children }) => {
         localStorage.setItem('tenlea_token', res.token);
         const userData = {
           ...res.data,
-          username: res.data.username || (res.data.name || 'ryan').toLowerCase().replace(/\s+/g, '')
+          username: res.data.username || (res.data.name || 'user').toLowerCase().replace(/\s+/g, '')
         };
         localStorage.setItem('tenlea_user', JSON.stringify(userData));
         setUser(userData);
         return userData;
       }
     } catch (err) {
-      console.warn('Backend login API failed, using demo user session:', err);
-      const nameFromEmail = email.split('@')[0] || 'Ryan';
+      console.warn('Backend login API error:', err.message);
+      if (err.response || (err.message && !err.message.includes('Network Error') && !err.message.includes('timeout'))) {
+        throw err;
+      }
+      // Demo session fallback for offline local testing
+      const nameFromEmail = email.split('@')[0] || 'User';
       const isLandowner = email.toLowerCase().includes('landowner') || email.toLowerCase().includes('land');
       const mockUser = {
         id: `usr_${Date.now()}`,
@@ -87,16 +91,20 @@ export const AuthProvider = ({ children }) => {
         localStorage.setItem('tenlea_token', res.token);
         const userData = {
           ...res.data,
-          username: res.data.username || (res.data.name || 'ryan').toLowerCase().replace(/\s+/g, '')
+          username: res.data.username || (res.data.name || 'user').toLowerCase().replace(/\s+/g, '')
         };
         localStorage.setItem('tenlea_user', JSON.stringify(userData));
         setUser(userData);
         return userData;
       }
     } catch (err) {
-      console.warn('Backend registration API failed, using demo registered user session:', err);
+      console.warn('Backend registration API error:', err.message);
+      if (err.response || (err.message && !err.message.includes('Network Error') && !err.message.includes('timeout'))) {
+        throw err;
+      }
+      // Demo session fallback for offline local testing
       const roleUpper = (formData.role || 'VEHICLE_OWNER').toUpperCase();
-      const rawName = formData.name || 'Ryan';
+      const rawName = formData.name || 'User';
       const mockUser = {
         id: `usr_${Date.now()}`,
         name: rawName,
