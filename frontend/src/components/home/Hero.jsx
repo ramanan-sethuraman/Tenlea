@@ -61,8 +61,8 @@ export const Hero = () => {
             }}
             className="font-extrabold tracking-tight select-none space-y-2 sm:space-y-3"
           >
-            {/* First Line: UNUSED SPACE   +   IDLE VEHICLES */}
-            <div className="flex flex-wrap sm:flex-nowrap items-center justify-center gap-x-3 sm:gap-x-6 lg:gap-x-8 text-2xl sm:text-4xl lg:text-5xl select-none sm:whitespace-nowrap">
+            {/* First Line: Unused Space   +   Idle Vehicles */}
+            <div className="flex flex-wrap sm:flex-nowrap items-center justify-center gap-x-3 sm:gap-x-5 lg:gap-x-6 text-3xl sm:text-5xl lg:text-6xl font-extrabold font-display tracking-tight select-none sm:whitespace-nowrap">
               <motion.span
                 variants={{
                   hidden: { opacity: 0, y: 30, filter: 'blur(10px)' },
@@ -73,12 +73,12 @@ export const Hero = () => {
                     transition: { type: 'spring', stiffness: 220, damping: 18 }
                   }
                 }}
-                className="inline-block font-sans font-medium uppercase tracking-[0.18em] sm:tracking-[0.25em] lg:tracking-[0.3em] text-white drop-shadow-md"
+                className="inline-block text-white font-extrabold font-display tracking-tight drop-shadow-lg"
               >
-                UNUSED SPACE
+                Unused Space
               </motion.span>
 
-              <span className="text-slate-400 font-extralight text-xl sm:text-2xl lg:text-3xl mx-1 sm:mx-3 select-none font-mono">+</span>
+              <span className="text-slate-400 font-light text-2xl sm:text-4xl lg:text-5xl mx-1 sm:mx-2 font-display">+</span>
 
               <motion.span
                 variants={{
@@ -90,9 +90,9 @@ export const Hero = () => {
                     transition: { type: 'spring', stiffness: 220, damping: 18 }
                   }
                 }}
-                className="inline-block font-sans font-medium uppercase tracking-[0.18em] sm:tracking-[0.25em] lg:tracking-[0.3em] text-white drop-shadow-md"
+                className="inline-block text-white font-extrabold font-display tracking-tight drop-shadow-lg"
               >
-                IDLE VEHICLES
+                Idle Vehicles
               </motion.span>
             </div>
 
@@ -107,9 +107,9 @@ export const Hero = () => {
                   transition: { type: 'spring', stiffness: 200, damping: 18 }
                 }
               }}
-              className="flex items-center justify-center text-2xl sm:text-4xl lg:text-5xl pt-2 sm:pt-4"
+              className="flex items-center justify-center text-3xl sm:text-5xl lg:text-6xl pt-2 sm:pt-3 font-extrabold font-display tracking-tight"
             >
-              <span className="font-serif font-extralight tracking-[0.18em] sm:tracking-[0.25em] text-slate-200 drop-shadow-lg">
+              <span className="gradient-text-silver font-extrabold font-display tracking-tight drop-shadow-xl">
                 One Trusted Connection
               </span>
             </motion.div>
