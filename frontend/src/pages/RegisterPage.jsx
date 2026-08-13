@@ -47,7 +47,7 @@ export const RegisterPage = () => {
       }
     } catch (err) {
       console.error('Registration failed:', err);
-      setErrorMsg('Registration failed. Please check your details and try again.');
+      setErrorMsg(err.message || 'Registration failed. Please check your details and try again.');
     } finally {
       setSubmitting(false);
     }
