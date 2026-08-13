@@ -62,27 +62,31 @@ const paymentRoutes = require('./routes/paymentRoutes');
 const agreementRoutes = require('./routes/agreementRoutes');
 const adminRoutes = require('./routes/adminRoutes');
 
-// Mount API Routes
-app.use('/api/v1/auth', authRoutes);
-app.use('/api/v1/kyc', kycRoutes);
-app.use('/api/v1/lands', landRoutes);
-app.use('/api/v1/parking', parkingRoutes);
-app.use('/api/v1/vehicles', vehicleRoutes);
-app.use('/api/v1/bookings', bookingRoutes);
-app.use('/api/v1/payments', paymentRoutes);
-app.use('/api/v1/agreements', agreementRoutes);
-app.use('/api/v1/admin', adminRoutes);
-
-// Health Check API
-app.get('/api/v1/health', (req, res) => {
-  res.status(200).json({
-    success: true,
-    message: 'TENLEA Service Operating Normally',
-    systemTime: new Date().toISOString(),
-    version: '1.0.0',
-    environment: process.env.NODE_ENV || 'development'
+// Mount API Routes across standard prefixes
+const mountRoutes = (prefix) => {
+  app.use(`${prefix}/auth`, authRoutes);
+  app.use(`${prefix}/kyc`, kycRoutes);
+  app.use(`${prefix}/lands`, landRoutes);
+  app.use(`${prefix}/parking`, parkingRoutes);
+  app.use(`${prefix}/vehicles`, vehicleRoutes);
+  app.use(`${prefix}/bookings`, bookingRoutes);
+  app.use(`${prefix}/payments`, paymentRoutes);
+  app.use(`${prefix}/agreements`, agreementRoutes);
+  app.use(`${prefix}/admin`, adminRoutes);
+  app.get(`${prefix}/health`, (req, res) => {
+    res.status(200).json({
+      success: true,
+      message: 'TENLEA Service Operating Normally',
+      systemTime: new Date().toISOString(),
+      version: '1.0.0',
+      environment: process.env.NODE_ENV || 'development'
+    });
   });
-});
+};
+
+mountRoutes('/api/v1');
+mountRoutes('/v1');
+mountRoutes('/api');
 
 // Fallback to client index.html for SPA routes or JSON info
 app.get('*', (req, res) => {

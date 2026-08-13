@@ -27,6 +27,15 @@ const connectDB = async () => {
     });
     console.log(`[MongoDB Connected]: Live Host -> ${conn.connection.host}`);
     isConnecting = false;
+    
+    // Auto-seed initial demo dataset if database is fresh
+    try {
+      const populateDatabase = require('../seedData');
+      populateDatabase();
+    } catch (e) {
+      console.warn('[Auto-seed Warning]:', e.message);
+    }
+    
     return conn;
   } catch (error) {
     isConnecting = false;
