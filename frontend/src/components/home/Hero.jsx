@@ -62,57 +62,54 @@ export const Hero = () => {
             className="font-extrabold tracking-tight select-none space-y-2 sm:space-y-3"
           >
             {/* First Line: UNUSED SPACE   +   IDLE VEHICLES */}
-            <div className="flex flex-wrap sm:flex-nowrap items-center justify-center gap-x-4 sm:gap-x-6 lg:gap-x-8 text-2xl sm:text-4xl lg:text-5xl select-none sm:whitespace-nowrap">
+            <div className="flex flex-wrap sm:flex-nowrap items-center justify-center gap-x-3 sm:gap-x-6 lg:gap-x-8 text-2xl sm:text-4xl lg:text-5xl select-none sm:whitespace-nowrap">
               <motion.span
                 variants={{
-                  hidden: { opacity: 0, y: 30, rotateX: -30, filter: 'blur(10px)' },
+                  hidden: { opacity: 0, y: 30, filter: 'blur(10px)' },
                   visible: { 
                     opacity: 1, 
                     y: 0, 
-                    rotateX: 0, 
                     filter: 'blur(0px)',
                     transition: { type: 'spring', stiffness: 220, damping: 18 }
                   }
                 }}
-                className="inline-block font-sans font-bold uppercase tracking-[0.06em] bg-gradient-to-r from-white via-slate-100 to-slate-300 bg-clip-text text-transparent drop-shadow-md"
+                className="inline-block font-sans font-medium uppercase tracking-[0.18em] sm:tracking-[0.25em] lg:tracking-[0.3em] text-white drop-shadow-md"
               >
-                Unused Space
+                UNUSED SPACE
               </motion.span>
 
-              <span className="text-slate-400 font-light text-2xl sm:text-3xl lg:text-4xl mx-2 sm:mx-4 select-none font-raleway">+</span>
+              <span className="text-slate-400 font-extralight text-xl sm:text-2xl lg:text-3xl mx-1 sm:mx-3 select-none font-mono">+</span>
 
               <motion.span
                 variants={{
-                  hidden: { opacity: 0, y: 30, rotateX: -30, filter: 'blur(10px)' },
+                  hidden: { opacity: 0, y: 30, filter: 'blur(10px)' },
                   visible: { 
                     opacity: 1, 
                     y: 0, 
-                    rotateX: 0, 
                     filter: 'blur(0px)',
                     transition: { type: 'spring', stiffness: 220, damping: 18 }
                   }
                 }}
-                className="inline-block font-sans font-bold uppercase tracking-[0.06em] bg-gradient-to-r from-slate-100 via-white to-slate-300 bg-clip-text text-transparent drop-shadow-md"
+                className="inline-block font-sans font-medium uppercase tracking-[0.18em] sm:tracking-[0.25em] lg:tracking-[0.3em] text-white drop-shadow-md"
               >
-                Idle Vehicles
+                IDLE VEHICLES
               </motion.span>
             </div>
 
-            {/* Second Line: One Trusted Connection (Close Vertically) */}
+            {/* Second Line: One Trusted Connection */}
             <motion.div
               variants={{
-                hidden: { opacity: 0, y: 30, rotateX: -30, filter: 'blur(10px)' },
+                hidden: { opacity: 0, y: 30, filter: 'blur(10px)' },
                 visible: { 
                   opacity: 1, 
                   y: 0, 
-                  rotateX: 0, 
                   filter: 'blur(0px)',
                   transition: { type: 'spring', stiffness: 200, damping: 18 }
                 }
               }}
-              className="flex items-center justify-center gap-2 text-2xl sm:text-4xl lg:text-5xl pt-0.5 sm:pt-1"
+              className="flex items-center justify-center text-2xl sm:text-4xl lg:text-5xl pt-2 sm:pt-4"
             >
-              <span className="font-raleway font-extralight tracking-widest bg-gradient-to-r from-white via-slate-200 to-slate-300 bg-clip-text text-transparent drop-shadow-lg">
+              <span className="font-serif font-extralight tracking-[0.18em] sm:tracking-[0.25em] text-slate-200 drop-shadow-lg">
                 One Trusted Connection
               </span>
             </motion.div>
