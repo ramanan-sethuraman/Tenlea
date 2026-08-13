@@ -112,15 +112,15 @@ export const Navbar = () => {
                   
                   <div className="flex flex-col text-left leading-tight max-w-[150px]">
                     <span className="text-xs font-extrabold text-zinc-950 truncate">
-                      {user.fullName || user.name || 'Ryan'}
+                      {user?.name || user?.email || 'User'}
                     </span>
                     <span className="text-[9px] text-zinc-700 font-extrabold uppercase mt-0.5 flex items-center gap-1">
                       <span className="text-zinc-600 font-mono font-medium lowercase text-[9px]">
-                        @{user.username || (user.name || 'ryan').toLowerCase().replace(/\s+/g, '')}
+                        @{user?.username || (user?.name || 'user').toLowerCase().replace(/\s+/g, '')}
                       </span>
                       <span className="text-zinc-400">•</span>
-                      <span className={`font-bold ${user.role === 'LANDOWNER' ? 'text-blue-400' : user.role === 'ADMIN' ? 'text-emerald-400' : 'text-amber-500'}`}>
-                        {user.role || 'LANDOWNER'}
+                      <span className={`font-bold ${user?.role === 'LANDOWNER' ? 'text-blue-600' : user?.role === 'ADMIN' ? 'text-emerald-600' : 'text-amber-600'}`}>
+                        {user?.role || 'VEHICLE_OWNER'}
                       </span>
                     </span>
                   </div>
@@ -134,12 +134,12 @@ export const Navbar = () => {
                     {/* User Header */}
                     <div className="pb-3 border-b border-zinc-800">
                       <h4 className="text-sm font-bold text-white truncate">
-                        {user.fullName || user.name || 'Sanjay'}
+                        {user?.name || user?.email || 'User'}
                       </h4>
                       <p className="text-xs text-amber-400 font-mono font-medium">
-                        @{user.username || (user.name || 'sanjay').toLowerCase().replace(/\s+/g, '')}
+                        @{user?.username || (user?.name || 'user').toLowerCase().replace(/\s+/g, '')}
                       </p>
-                      <p className="text-[10px] text-zinc-400 truncate mt-0.5">{user.email || 'sanjay@landowner.com'}</p>
+                      {user?.email && <p className="text-[10px] text-zinc-400 truncate mt-0.5">{user.email}</p>}
                       <span className={`inline-block mt-1.5 px-2.5 py-0.5 rounded-md text-[9px] font-extrabold border ${
                         user.role === 'LANDOWNER'
                           ? 'bg-blue-950 text-blue-300 border-blue-800'
@@ -286,11 +286,11 @@ export const Navbar = () => {
           {user && (
             <div className="p-3.5 rounded-2xl bg-zinc-900 border border-zinc-800 flex items-center justify-between mb-2">
               <div className="truncate">
-                <span className="text-xs font-bold text-white block truncate">{user.name || 'Ryan'}</span>
-                <span className="text-[10px] text-zinc-400 block truncate">{user.email || 'ryan@tenlea.com'}</span>
+                <span className="text-xs font-bold text-white block truncate">{user?.name || user?.email || 'User'}</span>
+                {user?.email && <span className="text-[10px] text-zinc-400 block truncate">{user.email}</span>}
               </div>
               <span className="px-2.5 py-0.5 rounded-md bg-amber-950 text-amber-300 text-[9px] font-extrabold border border-amber-800 shrink-0">
-                🛡️ {user.role || 'ADMIN'}
+                {user?.role || 'VEHICLE_OWNER'}
               </span>
             </div>
           )}
