@@ -18,11 +18,21 @@ export const LoginPage = () => {
     setErrorMsg('');
     try {
       setLoading(true);
+      let userData = null;
       if (login) {
-        await login(email, password);
+        userData = await login(email, password);
       }
-      setAuthSuccess(`Signed in successfully! Redirecting...`);
-      setTimeout(() => navigate('/'), 800);
+      setAuthSuccess(`Signed in successfully! Redirecting to dashboard...`);
+      setTimeout(() => {
+        const userRole = (userData?.role || '').toUpperCase();
+        if (userRole === 'ADMIN') {
+          navigate('/admin/dashboard');
+        } else if (userRole === 'LANDOWNER') {
+          navigate('/dashboard/landowner');
+        } else {
+          navigate('/dashboard/vehicle-owner');
+        }
+      }, 800);
     } catch (err) {
       console.error('Login error:', err);
       setErrorMsg(err.message || 'Invalid email or password. Please try again.');
