@@ -1249,7 +1249,7 @@ Verified Reference: ${agreementRef}
                     </>
                   ) : (
                     <>
-                      <Eye className="w-4 h-4 text-emerald-400 animate-pulse" />
+                      <Eye className="w-4 h-4 text-emerald-400" />
                       <span>Open Agreement</span>
                     </>
                   )}
@@ -1288,7 +1288,7 @@ Verified Reference: ${agreementRef}
                   }}
                   className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-zinc-900 border border-zinc-700 hover:border-emerald-500/50 text-white font-bold text-xs transition-all shadow-lg hover:bg-zinc-800 cursor-pointer"
                 >
-                  <Eye className="w-4 h-4 text-emerald-400 animate-pulse" />
+                  <Eye className="w-4 h-4 text-emerald-400" />
                   <span>Open Agreement</span>
                 </button>
               </div>

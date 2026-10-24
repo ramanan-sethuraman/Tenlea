@@ -266,19 +266,19 @@ export const LoginPage = () => {
                   placeholder="••••••••"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="w-full pl-10 pr-11 py-3 rounded-xl bg-zinc-950 border border-zinc-800 text-white placeholder-zinc-500 focus:outline-none focus:border-zinc-500 text-xs"
+                  className="w-full pl-10 pr-12 py-3 rounded-xl bg-zinc-950 border border-zinc-800 text-white placeholder-zinc-500 focus:outline-none focus:border-zinc-500 text-xs"
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3.5 top-3.5 w-4 h-4 flex items-center justify-center text-zinc-400 hover:text-white transition-colors cursor-pointer focus:outline-none"
-                  aria-label={showPassword ? 'Hide password' : 'Show password'}
-                  title={showPassword ? 'Hide password' : 'Show password'}
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2 w-7 h-7 rounded-lg bg-zinc-200 hover:bg-white text-black flex items-center justify-center cursor-pointer select-none shadow-sm focus:outline-none transition-none"
+                  aria-label={showPassword ? 'Password is open' : 'Password is closed'}
+                  title={showPassword ? 'Password is open' : 'Password is closed'}
                 >
                   {showPassword ? (
-                    <EyeOff className="w-4 h-4" />
+                    <Eye className="w-4 h-4 text-black stroke-[2.4]" />
                   ) : (
-                    <Eye className="w-4 h-4" />
+                    <EyeOff className="w-4 h-4 text-black stroke-[2.4]" />
                   )}
                 </button>
               </div>

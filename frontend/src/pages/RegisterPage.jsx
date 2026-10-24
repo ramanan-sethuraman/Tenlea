@@ -232,19 +232,19 @@ export const RegisterPage = () => {
                     placeholder="••••••••"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    className="w-full pl-3.5 pr-9 py-2.5 rounded-xl bg-zinc-950 border border-zinc-800 text-white text-xs focus:outline-none focus:border-zinc-500"
+                    className="w-full pl-3.5 pr-10 py-2.5 rounded-xl bg-zinc-950 border border-zinc-800 text-white text-xs focus:outline-none focus:border-zinc-500"
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-2.5 top-2.5 w-4 h-4 flex items-center justify-center text-zinc-400 hover:text-white transition-colors cursor-pointer focus:outline-none"
-                    aria-label={showPassword ? 'Hide password' : 'Show password'}
-                    title={showPassword ? 'Hide password' : 'Show password'}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 w-6 h-6 rounded-md bg-zinc-200 hover:bg-white text-black flex items-center justify-center cursor-pointer select-none shadow-sm focus:outline-none transition-none"
+                    aria-label={showPassword ? 'Password is open' : 'Password is closed'}
+                    title={showPassword ? 'Password is open' : 'Password is closed'}
                   >
                     {showPassword ? (
-                      <EyeOff className="w-3.5 h-3.5" />
+                      <Eye className="w-3.5 h-3.5 text-black stroke-[2.4]" />
                     ) : (
-                      <Eye className="w-3.5 h-3.5" />
+                      <EyeOff className="w-3.5 h-3.5 text-black stroke-[2.4]" />
                     )}
                   </button>
                 </div>
@@ -258,19 +258,19 @@ export const RegisterPage = () => {
                     placeholder="••••••••"
                     value={confirmPassword}
                     onChange={(e) => setConfirmPassword(e.target.value)}
-                    className="w-full pl-3.5 pr-9 py-2.5 rounded-xl bg-zinc-950 border border-zinc-800 text-white text-xs focus:outline-none focus:border-zinc-500"
+                    className="w-full pl-3.5 pr-10 py-2.5 rounded-xl bg-zinc-950 border border-zinc-800 text-white text-xs focus:outline-none focus:border-zinc-500"
                   />
                   <button
                     type="button"
                     onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                    className="absolute right-2.5 top-2.5 w-4 h-4 flex items-center justify-center text-zinc-400 hover:text-white transition-colors cursor-pointer focus:outline-none"
-                    aria-label={showConfirmPassword ? 'Hide password' : 'Show password'}
-                    title={showConfirmPassword ? 'Hide password' : 'Show password'}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 w-6 h-6 rounded-md bg-zinc-200 hover:bg-white text-black flex items-center justify-center cursor-pointer select-none shadow-sm focus:outline-none transition-none"
+                    aria-label={showConfirmPassword ? 'Password is open' : 'Password is closed'}
+                    title={showConfirmPassword ? 'Password is open' : 'Password is closed'}
                   >
                     {showConfirmPassword ? (
-                      <EyeOff className="w-3.5 h-3.5" />
+                      <Eye className="w-3.5 h-3.5 text-black stroke-[2.4]" />
                     ) : (
-                      <Eye className="w-3.5 h-3.5" />
+                      <EyeOff className="w-3.5 h-3.5 text-black stroke-[2.4]" />
                     )}
                   </button>
                 </div>

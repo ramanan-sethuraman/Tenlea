@@ -42,6 +42,15 @@
       font-size: 16px !important;
     }
   }
+
+  /* Suppress browser native password reveal and clear buttons to prevent blinking and duplicate icons */
+  input::-ms-reveal,
+  input::-ms-clear {
+    display: none !important;
+    width: 0 !important;
+    height: 0 !important;
+    pointer-events: none !important;
+  }
 }
 
 /* Custom Scrollbar */
