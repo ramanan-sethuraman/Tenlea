@@ -31,11 +31,11 @@ export default {
         }
       },
       fontFamily: {
-        sans: ['Raleway', 'Inter', 'sans-serif'],
-        display: ['Outfit', 'sans-serif'],
+        sans: ['Inter', 'Outfit', 'system-ui', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'sans-serif'],
+        display: ['Outfit', 'Inter', 'sans-serif'],
         serif: ['Cormorant Garamond', 'Playfair Display', 'serif'],
         coterie: ['Cormorant Garamond', 'Playfair Display', 'serif'],
-        raleway: ['Raleway', 'sans-serif'],
+        mono: ['ui-monospace', 'SFMono-Regular', 'Menlo', 'Monaco', 'Consolas', 'monospace'],
       },
       backgroundImage: {
         'mono-gradient': 'linear-gradient(135deg, #09090b 0%, #18181b 50%, #27272a 100%)',
