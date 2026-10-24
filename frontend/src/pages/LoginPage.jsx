@@ -70,18 +70,10 @@ export const LoginPage = () => {
     }
   };
 
-  const fillDemoAccount = (demoRole) => {
-    setRole(demoRole);
-    if (demoRole === 'landowner') {
-      setEmail('sanjay@landowner.com');
-      setPassword('password123');
-    } else if (demoRole === 'vehicle') {
-      setEmail('rahul@driver.com');
-      setPassword('password123');
-    } else {
-      setEmail('admin@tenlea');
-      setPassword('admin28');
-    }
+  const fillAdminAccount = () => {
+    setRole('admin');
+    setEmail('admin@tenlea');
+    setPassword('admin28');
   };
 
   return (
@@ -106,34 +98,19 @@ export const LoginPage = () => {
               </p>
             </div>
 
-            {/* Quick Demo Fill Buttons */}
+            {/* Admin Access Option */}
             <div className="mt-8 pt-6 border-t border-zinc-800/80">
               <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-500 block mb-2">
-                Quick Demo Auto-Fill:
+                System Administration:
               </span>
-              <div className="flex flex-wrap gap-2">
-                <button
-                  type="button"
-                  onClick={() => fillDemoAccount('landowner')}
-                  className="px-2.5 py-1 rounded-lg bg-zinc-900 border border-zinc-700 text-[10px] text-zinc-300 hover:text-white hover:border-zinc-500 transition-colors"
-                >
-                  🏡 Landowner
-                </button>
-                <button
-                  type="button"
-                  onClick={() => fillDemoAccount('vehicle')}
-                  className="px-2.5 py-1 rounded-lg bg-zinc-900 border border-zinc-700 text-[10px] text-zinc-300 hover:text-white hover:border-zinc-500 transition-colors"
-                >
-                  🚗 Vehicle Owner
-                </button>
-                <button
-                  type="button"
-                  onClick={() => fillDemoAccount('admin')}
-                  className="px-2.5 py-1 rounded-lg bg-zinc-900 border border-zinc-700 text-[10px] text-zinc-300 hover:text-white hover:border-zinc-500 transition-colors"
-                >
-                  🛡️ Admin
-                </button>
-              </div>
+              <button
+                type="button"
+                onClick={fillAdminAccount}
+                className="px-3 py-1.5 rounded-lg bg-zinc-900 border border-zinc-700 text-xs text-zinc-300 hover:text-white hover:border-zinc-500 transition-colors flex items-center gap-2"
+              >
+                <ShieldCheck className="w-3.5 h-3.5 text-zinc-400" />
+                Auto-Fill Admin (admin@tenlea)
+              </button>
             </div>
           </div>
 

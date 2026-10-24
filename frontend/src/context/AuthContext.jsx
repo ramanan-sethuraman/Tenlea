@@ -64,10 +64,7 @@ export const AuthProvider = ({ children }) => {
       console.warn('Backend login API error:', err.message);
 
       const cleanEmail = (email || '').toLowerCase().trim();
-      const isAdminDemo = (cleanEmail === 'admin@tenlea' || cleanEmail === 'admin@tenlea.com') && (password === 'admin28' || password === 'password123');
-      const isLandownerDemo = cleanEmail === 'sanjay@landowner.com' && password === 'password123';
-      const isDriverDemo = cleanEmail === 'rahul@driver.com' && password === 'password123';
-      const isDemoCreds = isAdminDemo || isLandownerDemo || isDriverDemo;
+      const isAdminLogin = (cleanEmail === 'admin@tenlea' || cleanEmail === 'admin@tenlea.com') && password === 'admin28';
 
       const isNetworkOrServerIssue =
         !err.response && (
@@ -79,14 +76,12 @@ export const AuthProvider = ({ children }) => {
           err.message.includes('503')
         );
 
-      if (!isDemoCreds && !isNetworkOrServerIssue) {
+      if (!isAdminLogin && !isNetworkOrServerIssue) {
         throw err;
       }
 
-      // Demo session fallback for offline local testing & quick demo buttons
-      const nameFromEmail = cleanEmail.split('@')[0] || 'User';
-      const roleLower = (requestedRole || '').toLowerCase();
-      const isAdmin = isAdminDemo || roleLower === 'admin' || cleanEmail.includes('admin');
+      // Admin fallback if backend API is temporarily unreachable
+      const isAdmin = isAdminLogin || (requestedRole || '').toLowerCase() === 'admin' || cleanEmail.includes('admin');
       const isLandowner = !isAdmin && (roleLower === 'landowner' || cleanEmail.includes('landowner') || cleanEmail.includes('land'));
       const calculatedRole = isAdmin ? 'ADMIN' : (isLandowner ? 'LANDOWNER' : 'VEHICLE_OWNER');
 

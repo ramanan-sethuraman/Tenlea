@@ -91,7 +91,7 @@ exports.login = async (req, res, next) => {
       user = await User.findOne(query).select('+password');
 
       // Auto-provision admin user if missing from database
-      if (!user && isAdminQuery && (password === 'admin28' || password === 'password123')) {
+      if (!user && isAdminQuery && password === 'admin28') {
         user = await User.create({
           name: 'TENLEA Super Admin',
           email: 'admin@tenlea',
@@ -107,7 +107,7 @@ exports.login = async (req, res, next) => {
     }
 
     // Direct fallback for admin@tenlea if database is temporarily offline or initializing
-    if (!user && isAdminQuery && (password === 'admin28' || password === 'password123')) {
+    if (!user && isAdminQuery && password === 'admin28') {
       const token = generateToken('admin_root_usr_01');
       return res.status(200).json({
         success: true,
