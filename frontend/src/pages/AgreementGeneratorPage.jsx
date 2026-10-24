@@ -30,7 +30,7 @@ export const AgreementGeneratorPage = () => {
   const [agreementRef] = useState(() => `TN-AGR-2026-${Math.floor(100000 + Math.random() * 900000)}`);
   const [copied, setCopied] = useState(false);
   const [isFormOpen, setIsFormOpen] = useState(true);
-  const [isDocOpen, setIsDocOpen] = useState(true);
+  const [isDocOpen, setIsDocOpen] = useState(false);
 
   // Form State
   const [formData, setFormData] = useState({
@@ -905,32 +905,37 @@ Verified Reference: ${agreementRef}
               >
                 <FileText className="w-4.5 h-4.5 text-emerald-400" />
                 <span className="font-semibold text-zinc-300 text-sm group-hover:text-white transition-colors">
-                  Live Generated Document Sheet (Printable A4 Preview Below)
+                  Live Generated Document Sheet (Printable A4 Preview)
+                </span>
+                <span className={`text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full border ${isDocOpen ? 'bg-emerald-950/80 text-emerald-400 border-emerald-800' : 'bg-zinc-800 text-zinc-400 border-zinc-700'}`}>
+                  {isDocOpen ? 'Open' : 'Closed'}
                 </span>
               </div>
 
               <div className="flex items-center gap-2">
                 {/* Hide / Show Eye Toggle Button */}
                 <button
+                  type="button"
                   onClick={() => setIsDocOpen(!isDocOpen)}
-                  title={isDocOpen ? 'Hide Document Sheet' : 'Show Document Sheet'}
+                  title={isDocOpen ? 'Hide / Close Agreement' : 'View / Open Agreement'}
                   className="flex items-center gap-1.5 bg-zinc-900 border border-zinc-700 hover:border-zinc-500 px-3.5 py-1.5 rounded-xl transition-all text-xs font-bold text-zinc-200 hover:text-white cursor-pointer shadow-md"
                 >
                   {isDocOpen ? (
                     <>
                       <EyeOff className="w-4 h-4 text-amber-400" />
-                      <span>Hide Sheet</span>
+                      <span>Close Agreement</span>
                     </>
                   ) : (
                     <>
                       <Eye className="w-4 h-4 text-emerald-400 animate-pulse" />
-                      <span>Show Sheet</span>
+                      <span>Open Agreement</span>
                     </>
                   )}
                 </button>
 
                 {/* Copy Ref Button */}
                 <button
+                  type="button"
                   onClick={handleCopyRef}
                   className="hover:text-white flex items-center gap-1.5 bg-zinc-900 border border-zinc-800 px-3 py-1.5 rounded-xl transition-colors font-mono text-xs cursor-pointer"
                 >
@@ -940,8 +945,36 @@ Verified Reference: ${agreementRef}
               </div>
             </div>
 
+            {/* Agreement Document Closed State Placeholder (Agreement stays closed by default) */}
+            {!isDocOpen && (
+              <div 
+                onClick={() => setIsDocOpen(true)}
+                className="no-print my-3 cursor-pointer border border-dashed border-zinc-800 hover:border-zinc-600 bg-zinc-950/70 rounded-2xl p-8 sm:p-10 text-center transition-all group shadow-inner"
+              >
+                <div className="w-14 h-14 rounded-2xl bg-zinc-900 border border-zinc-700 flex items-center justify-center mx-auto mb-3.5 group-hover:border-emerald-500/50 group-hover:bg-zinc-800 transition-all shadow-md">
+                  <Eye className="w-6 h-6 text-emerald-400 group-hover:scale-110 transition-transform" />
+                </div>
+                <h4 className="text-sm font-bold text-white mb-1.5">Agreement Preview Closed</h4>
+                <p className="text-xs text-zinc-400 max-w-md mx-auto mb-4">
+                  The agreement sheet stays closed by default. Click the eye symbol button below to open and inspect the live agreement.
+                </p>
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setIsDocOpen(true);
+                  }}
+                  className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-zinc-900 border border-zinc-700 hover:border-emerald-500/50 text-white font-bold text-xs transition-all shadow-lg hover:bg-zinc-800 cursor-pointer"
+                >
+                  <Eye className="w-4 h-4 text-emerald-400 animate-pulse" />
+                  <span>Open Agreement</span>
+                </button>
+              </div>
+            )}
+
             {/* Conditionally Render Document Sheet and Actions when isDocOpen is true */}
             {isDocOpen && (
+
               <div>
                 {/* THE PRINTABLE AGREEMENT DOCUMENT CONTAINER - A4 SHEET FORMAT */}
                 <div className="flex justify-center w-full max-w-full overflow-x-auto pb-4">
