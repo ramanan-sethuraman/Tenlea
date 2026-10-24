@@ -3,6 +3,7 @@ import React, { useState, useEffect, useRef } from 'react';
 export const AnimatedBackground = ({
   variant = 'default',
   showVideo = false,
+  imageSrc = null,
   showOrbs = true,
   showGrid = false,
   showVehicles = false,
@@ -118,6 +119,24 @@ export const AnimatedBackground = ({
 
           {/* Dark Glass Vignette Overlay for High Contrast Legibility */}
           <div className="absolute inset-0 bg-gradient-to-b from-zinc-950/85 via-zinc-950/60 to-zinc-950/90" />
+        </div>
+      )}
+
+      {/* Static Photo Backdrop (Clean, Instant Load, No Video Delay) */}
+      {imageSrc && !showVideo && (
+        <div className="absolute inset-0 pointer-events-none z-0 overflow-hidden w-full h-full">
+          <img
+            src={imageSrc}
+            alt=""
+            loading="eager"
+            fetchPriority="high"
+            aria-hidden="true"
+            className={`absolute inset-0 w-full h-full object-cover scale-105 pointer-events-none ${
+              grayscale ? 'grayscale contrast-125 brightness-90' : ''
+            } opacity-50`}
+          />
+          {/* Dark Glass Vignette Overlay for High Contrast Legibility */}
+          <div className="absolute inset-0 bg-gradient-to-b from-zinc-950/85 via-zinc-950/50 to-zinc-950/90" />
         </div>
       )}
 

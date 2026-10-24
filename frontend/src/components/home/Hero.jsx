@@ -31,7 +31,14 @@ export const Hero = () => {
 
   return (
     <section className="relative bg-zinc-950 overflow-hidden text-white min-h-[85vh] flex flex-col justify-center">
-      <AnimatedBackground variant="glow" showVideo={true} videoSrc="/bg-video.mp4" posterSrc="/hero-poster.jpg" playbackRate={0.35} showGrid={false} showVehicles={false} className="pt-32 pb-20 md:pt-40 md:pb-28">
+      <AnimatedBackground
+        variant="glow"
+        showVideo={false}
+        imageSrc="/hero-poster.jpg"
+        showGrid={false}
+        showVehicles={false}
+        className="pt-32 pb-20 md:pt-40 md:pb-28"
+      >
 
       <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
         <div className="text-center space-y-8 sm:space-y-10 max-w-4xl mx-auto">
