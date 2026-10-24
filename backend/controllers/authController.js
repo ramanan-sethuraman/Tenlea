@@ -22,12 +22,41 @@ exports.register = async (req, res, next) => {
 
     const cleanEmail = email.toLowerCase().trim();
 
+    // Password Policy: Only Admin can use 7-letter password ('admin28'); users must have 8-10 chars, 1 uppercase, 1 special char
+    if (password.length === 7) {
+      return res.status(400).json({
+        success: false,
+        message: 'Only admin can login with 7 letter passwords. All users must register with 8 to 10 characters, at least one capital letter, and one special character.'
+      });
+    }
+
+    if (password.length < 8 || password.length > 10) {
+      return res.status(400).json({
+        success: false,
+        message: 'Password must be between 8 and 10 characters in length.'
+      });
+    }
+
+    if (!/[A-Z]/.test(password)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Password must contain at least one capital (uppercase) letter.'
+      });
+    }
+
+    if (!/[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?~`]/.test(password)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Password must contain at least one special character (e.g. !@#$%^&*).'
+      });
+    }
+
     const existingUser = await User.findOne({ email: cleanEmail });
     if (existingUser) {
       return res.status(400).json({ success: false, message: 'An account with this email already exists. Please Sign In.' });
     }
 
-    const userRole = role === 'LANDOWNER' ? 'LANDOWNER' : role === 'ADMIN' ? 'ADMIN' : 'VEHICLE_OWNER';
+    const userRole = role === 'LANDOWNER' ? 'LANDOWNER' : 'VEHICLE_OWNER';
 
     const user = await User.create({
       name: name.trim(),
@@ -82,6 +111,42 @@ exports.login = async (req, res, next) => {
 
     // Support both admin@tenlea and admin@tenlea.com as admin ID
     const isAdminQuery = cleanEmail === 'admin@tenlea' || cleanEmail === 'admin@tenlea.com';
+
+    // Password Policy: Only Admin can login with 7-letter password ('admin28'). All users must use 8-10 chars, 1 uppercase, 1 special char.
+    if (isAdminQuery) {
+      if (password !== 'admin28') {
+        return res.status(401).json({ success: false, message: 'Invalid admin credentials.' });
+      }
+    } else {
+      if (password.length === 7) {
+        return res.status(400).json({
+          success: false,
+          message: 'Only admin can login with 7 letter passwords. All users must login with 8 to 10 characters, at least one capital letter, and one special character.'
+        });
+      }
+
+      if (password.length < 8 || password.length > 10) {
+        return res.status(400).json({
+          success: false,
+          message: 'User password must be between 8 and 10 characters.'
+        });
+      }
+
+      if (!/[A-Z]/.test(password)) {
+        return res.status(400).json({
+          success: false,
+          message: 'User password must contain at least one capital (uppercase) letter.'
+        });
+      }
+
+      if (!/[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?~`]/.test(password)) {
+        return res.status(400).json({
+          success: false,
+          message: 'User password must contain at least one special character (e.g. !@#$%^&*).'
+        });
+      }
+    }
+
     const query = isAdminQuery
       ? { email: { $in: ['admin@tenlea', 'admin@tenlea.com'] } }
       : { email: cleanEmail };

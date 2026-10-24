@@ -20,6 +20,38 @@ export const LoginPage = () => {
   const handleFormSubmit = async (e) => {
     e.preventDefault();
     setErrorMsg('');
+
+    const cleanEmail = (email || '').toLowerCase().trim();
+    const isAdmin = cleanEmail === 'admin@tenlea' || cleanEmail === 'admin@tenlea.com' || role === 'admin';
+
+    // Password Policy: Only admin can login with 7 letter passwords; Users must use 8-10 chars, 1 uppercase, 1 special char
+    if (isAdmin) {
+      if (password !== 'admin28') {
+        setErrorMsg('Invalid administrator credentials.');
+        return;
+      }
+    } else {
+      if (password.length === 7) {
+        setErrorMsg('Only admin can login with 7 letter passwords. User passwords must be 8 to 10 characters with at least one capital letter and one special character.');
+        return;
+      }
+
+      if (password.length < 8 || password.length > 10) {
+        setErrorMsg('User password must be between 8 and 10 characters in length.');
+        return;
+      }
+
+      if (!/[A-Z]/.test(password)) {
+        setErrorMsg('User password must contain at least one capital letter (A-Z).');
+        return;
+      }
+
+      if (!/[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?~`]/.test(password)) {
+        setErrorMsg('User password must contain at least one special character (e.g. !@#$%^&*).');
+        return;
+      }
+    }
+
     try {
       setLoading(true);
       let userData = null;
@@ -282,6 +314,9 @@ export const LoginPage = () => {
                   )}
                 </button>
               </div>
+              <p className="mt-1.5 text-[10px] text-zinc-500">
+                * User password: 8–10 chars with 1 capital &amp; 1 special char (Admin: 7 chars)
+              </p>
             </div>
             {errorMsg && (
               <div className="p-3 rounded-xl bg-red-500/10 border border-red-500/30 text-red-400 text-xs text-center font-medium">

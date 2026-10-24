@@ -31,7 +31,28 @@ export const RegisterPage = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setErrorMsg('');
-    
+
+    // Password Policy: Only Admin can use 7-letter password; Users must be 8-10 chars with 1 uppercase & 1 special char
+    if (password.length === 7) {
+      setErrorMsg('Only admin can login with 7 letter passwords. User passwords must be 8 to 10 characters with at least one capital letter and one special character.');
+      return;
+    }
+
+    if (password.length < 8 || password.length > 10) {
+      setErrorMsg('Password must be between 8 and 10 characters (maximum 10 letters).');
+      return;
+    }
+
+    if (!/[A-Z]/.test(password)) {
+      setErrorMsg('Password must contain at least one capital letter (A-Z).');
+      return;
+    }
+
+    if (!/[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?~`]/.test(password)) {
+      setErrorMsg('Password must contain at least one special character (e.g. !@#$%^&*).');
+      return;
+    }
+
     if (password && confirmPassword && password !== confirmPassword) {
       setErrorMsg('Passwords do not match. Please re-check your password.');
       return;
@@ -274,6 +295,42 @@ export const RegisterPage = () => {
                     )}
                   </button>
                 </div>
+              </div>
+            </div>
+
+            {/* Password Policy Hints */}
+            <div className="p-2.5 rounded-xl bg-zinc-950/80 border border-zinc-800/80 space-y-1.5 text-[11px]">
+              <div className="text-zinc-400 font-medium flex items-center justify-between">
+                <span>Password Requirements (Users):</span>
+                <span className="text-[10px] text-zinc-500 font-mono">{password.length}/10 chars</span>
+              </div>
+              <div className="grid grid-cols-3 gap-1.5 text-[10px]">
+                <span className={`px-2 py-0.5 rounded-md flex items-center gap-1 border ${
+                  password.length >= 8 && password.length <= 10
+                    ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400'
+                    : password.length > 10 || password.length === 7
+                    ? 'bg-red-500/10 border-red-500/30 text-red-400'
+                    : 'bg-zinc-900 border-zinc-800 text-zinc-400'
+                }`}>
+                  <span className="font-bold">{password.length >= 8 && password.length <= 10 ? '✓' : '•'}</span>
+                  8–10 chars
+                </span>
+                <span className={`px-2 py-0.5 rounded-md flex items-center gap-1 border ${
+                  /[A-Z]/.test(password)
+                    ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400'
+                    : 'bg-zinc-900 border-zinc-800 text-zinc-400'
+                }`}>
+                  <span className="font-bold">{/[A-Z]/.test(password) ? '✓' : '•'}</span>
+                  1 Capital
+                </span>
+                <span className={`px-2 py-0.5 rounded-md flex items-center gap-1 border ${
+                  /[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?~`]/.test(password)
+                    ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400'
+                    : 'bg-zinc-900 border-zinc-800 text-zinc-400'
+                }`}>
+                  <span className="font-bold">{/[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?~`]/.test(password) ? '✓' : '•'}</span>
+                  1 Special
+                </span>
               </div>
             </div>
 
