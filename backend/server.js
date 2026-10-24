@@ -13,15 +13,6 @@ dotenv.config({ path: path.join(__dirname, '.env') });
 const connectDB = require('./config/db');
 const app = express();
 
-// Ensure Database Connection Middleware
-app.use(async (req, res, next) => {
-  try {
-    await connectDB();
-  } catch (err) {
-    console.warn('[DB Middleware Warning]: DB initialization in progress or offline:', err.message);
-  }
-  next();
-});
 
 // Security & Middleware
 app.use(helmet({

@@ -1,40 +1,14 @@
-const mongoose = require('mongoose');
+const { createModel } = require('../config/store');
 
-const disputeSchema = new mongoose.Schema({
-  bookingId: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'Booking',
-    required: true,
-  },
-  raisedBy: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'User',
-    required: true,
-  },
-  reason: {
-    type: String,
-    required: true,
-  },
-  description: {
-    type: String,
-    required: true,
-  },
-  evidence: [{
-    type: String,
-  }],
-  status: {
-    type: String,
-    enum: ['OPEN', 'UNDER_REVIEW', 'RESOLVED', 'REJECTED'],
-    default: 'OPEN',
-  },
-  adminResponse: {
-    type: String,
-    default: '',
-  },
-  resolvedBy: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'User',
-  },
-}, { timestamps: true });
+const Dispute = createModel('Dispute', {
+  bookingId: null,
+  raisedBy: null,
+  reason: '',
+  description: '',
+  evidence: [],
+  status: 'OPEN',
+  adminResponse: '',
+  resolvedBy: null,
+});
 
-module.exports = mongoose.model('Dispute', disputeSchema);
+module.exports = Dispute;

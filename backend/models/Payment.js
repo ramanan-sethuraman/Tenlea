@@ -1,43 +1,14 @@
-const mongoose = require('mongoose');
+const { createModel } = require('../config/store');
 
-const paymentSchema = new mongoose.Schema({
-  bookingId: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'Booking',
-    required: true,
-  },
-  payerId: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'User',
-    required: true,
-  },
-  receiverId: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'User',
-    required: true,
-  },
-  amount: {
-    type: Number,
-    required: true,
-  },
-  platformFee: {
-    type: Number,
-    required: true, // 8-12%
-  },
-  transactionId: {
-    type: String,
-    required: true,
-  },
-  paymentGateway: {
-    type: String,
-    enum: ['RAZORPAY', 'DEMO_ESCROW'],
-    default: 'DEMO_ESCROW',
-  },
-  status: {
-    type: String,
-    enum: ['SUCCESS', 'FAILED', 'PENDING', 'REFUNDED'],
-    default: 'SUCCESS',
-  },
-}, { timestamps: true });
+const Payment = createModel('Payment', {
+  bookingId: null,
+  payerId: null,
+  receiverId: null,
+  amount: 0,
+  platformFee: 0,
+  transactionId: '',
+  paymentGateway: 'DEMO_ESCROW',
+  status: 'SUCCESS',
+});
 
-module.exports = mongoose.model('Payment', paymentSchema);
+module.exports = Payment;

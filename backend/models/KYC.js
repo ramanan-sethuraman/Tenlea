@@ -1,45 +1,15 @@
-const mongoose = require('mongoose');
+const { createModel } = require('../config/store');
 
-const kycSchema = new mongoose.Schema({
-  userId: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'User',
-    required: true,
-  },
-  documentType: {
-    type: String,
-    enum: ['AADHAAR', 'PAN', 'DRIVING_LICENSE', 'PASSPORT'],
-    required: true,
-  },
-  documentNumber: {
-    type: String,
-    required: true,
-    trim: true,
-  },
-  documentUrl: {
-    type: String,
-    required: true,
-  },
-  selfieUrl: {
-    type: String,
-    required: true,
-  },
-  status: {
-    type: String,
-    enum: ['PENDING', 'UNDER_REVIEW', 'VERIFIED', 'REJECTED'],
-    default: 'PENDING',
-  },
-  rejectionReason: {
-    type: String,
-    default: '',
-  },
-  reviewedBy: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'User',
-  },
-  reviewedAt: {
-    type: Date,
-  },
-}, { timestamps: true });
+const KYC = createModel('KYC', {
+  userId: null,
+  documentType: 'AADHAAR',
+  documentNumber: '',
+  documentUrl: '',
+  selfieUrl: '',
+  status: 'PENDING',
+  rejectionReason: '',
+  reviewedBy: null,
+  reviewedAt: null,
+});
 
-module.exports = mongoose.model('KYC', kycSchema);
+module.exports = KYC;

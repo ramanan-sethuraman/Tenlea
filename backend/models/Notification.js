@@ -1,28 +1,11 @@
-const mongoose = require('mongoose');
+const { createModel } = require('../config/store');
 
-const notificationSchema = new mongoose.Schema({
-  userId: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'User',
-    required: true,
-  },
-  title: {
-    type: String,
-    required: true,
-  },
-  message: {
-    type: String,
-    required: true,
-  },
-  type: {
-    type: String,
-    enum: ['BOOKING', 'PAYMENT', 'KYC', 'AGREEMENT', 'SECURITY', 'SYSTEM'],
-    default: 'SYSTEM',
-  },
-  read: {
-    type: Boolean,
-    default: false,
-  },
-}, { timestamps: true });
+const Notification = createModel('Notification', {
+  userId: null,
+  title: '',
+  message: '',
+  type: 'SYSTEM',
+  read: false,
+});
 
-module.exports = mongoose.model('Notification', notificationSchema);
+module.exports = Notification;

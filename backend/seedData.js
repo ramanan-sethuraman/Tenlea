@@ -10,11 +10,11 @@ const populateDatabase = async () => {
   try {
     const existingUsersCount = await User.countDocuments();
     if (existingUsersCount > 0) {
-      console.log(`[Database Engine]: ${existingUsersCount} user records already exist in MongoDB.`);
+      console.log(`[Database Engine]: ${existingUsersCount} user records already exist in store.`);
       return;
     }
 
-    console.log('[Database Engine]: Populating initial demo data into MongoDB...');
+    console.log('[Database Engine]: Populating initial demo data into store...');
 
     // Create Demo Users
     const admin = await User.create({
