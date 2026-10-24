@@ -19,9 +19,9 @@ const populateDatabase = async () => {
     // Create Demo Users
     const admin = await User.create({
       name: 'TENLEA Super Admin',
-      email: 'admin@tenlea.com',
+      email: 'admin@tenlea',
       phone: '+91 98765 00001',
-      password: 'password123',
+      password: 'admin28',
       role: 'ADMIN',
       kycStatus: 'VERIFIED',
     });

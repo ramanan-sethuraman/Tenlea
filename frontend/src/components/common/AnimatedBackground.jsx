@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 
 export const AnimatedBackground = ({
   variant = 'default',
@@ -7,28 +7,115 @@ export const AnimatedBackground = ({
   showGrid = false,
   showVehicles = false,
   videoSrc = '/bg-video.mp4',
+  posterSrc = '/hero-poster.jpg',
+  playbackRate = 1,
+  lazy = false,
   grayscale = false,
   className = '',
   children,
 }) => {
+  const [videoLoaded, setVideoLoaded] = useState(false);
+  const [shouldLoadVideo, setShouldLoadVideo] = useState(!lazy);
+  const containerRef = useRef(null);
+  const videoRef = useRef(null);
+
+  // Lazy loading: off-screen videos only attach when entering viewport
+  useEffect(() => {
+    if (!showVideo || !lazy || shouldLoadVideo) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            setShouldLoadVideo(true);
+            observer.disconnect();
+          }
+        });
+      },
+      { rootMargin: '300px' }
+    );
+
+    if (containerRef.current) {
+      observer.observe(containerRef.current);
+    }
+
+    return () => observer.disconnect();
+  }, [showVideo, lazy, shouldLoadVideo]);
+
+  // Video playback speed and autoplay reliability
+  useEffect(() => {
+    if (!showVideo || !shouldLoadVideo) return;
+    const video = videoRef.current;
+    if (!video) return;
+
+    if (playbackRate && playbackRate !== 1) {
+      video.playbackRate = playbackRate;
+    }
+
+    const tryPlay = () => {
+      const promise = video.play();
+      if (promise !== undefined) {
+        promise.catch(() => {
+          // Safely catch browser autoplay hesitations
+        });
+      }
+    };
+
+    tryPlay();
+  }, [showVideo, shouldLoadVideo, playbackRate]);
+
   return (
-    <div className={`relative overflow-hidden w-full max-w-full ${className}`}>
-      {/* 1. Hardware-Accelerated Smooth Video Background */}
+    <div
+      ref={containerRef}
+      className={`relative overflow-hidden w-full max-w-full ${className}`}
+    >
+      {/* 1. Hardware-Accelerated Video Background with Instant Poster & Smooth Fade-in */}
       {showVideo && (
         <div className="absolute inset-0 pointer-events-none z-0 overflow-hidden w-full h-full">
-          <video
-            autoPlay
-            loop
-            muted
-            playsInline
-            preload="auto"
-            style={{ transform: 'translateZ(0)' }}
-            className={`w-full h-full object-cover opacity-45 scale-105 will-change-transform ${
-              grayscale ? 'grayscale contrast-125 brightness-90' : ''
-            }`}
-          >
-            <source src={videoSrc} type="video/mp4" />
-          </video>
+          {/* Instant Poster Backdrop: Eliminates black screen void on refresh */}
+          {posterSrc && (
+            <img
+              src={posterSrc}
+              alt=""
+              loading="eager"
+              fetchPriority="high"
+              aria-hidden="true"
+              className={`absolute inset-0 w-full h-full object-cover scale-105 pointer-events-none transition-opacity duration-1000 ${
+                grayscale ? 'grayscale contrast-125 brightness-90' : ''
+              } ${videoLoaded ? 'opacity-20' : 'opacity-65'}`}
+            />
+          )}
+
+          {/* HTML5 Streamed Video */}
+          {shouldLoadVideo && (
+            <video
+              ref={videoRef}
+              autoPlay
+              loop
+              muted
+              playsInline
+              preload="metadata"
+              poster={posterSrc}
+              disablePictureInPicture
+              disableRemotePlayback
+              onLoadedData={() => {
+                setVideoLoaded(true);
+                if (videoRef.current && playbackRate && playbackRate !== 1) {
+                  videoRef.current.playbackRate = playbackRate;
+                }
+              }}
+              onCanPlay={() => {
+                setVideoLoaded(true);
+              }}
+              style={{ transform: 'translateZ(0)' }}
+              className={`w-full h-full object-cover scale-105 will-change-transform transition-opacity duration-1000 ease-in-out ${
+                grayscale ? 'grayscale contrast-125 brightness-90' : ''
+              } ${videoLoaded ? 'opacity-50' : 'opacity-0'}`}
+            >
+              <source src={videoSrc} type="video/mp4" />
+            </video>
+          )}
+
           {/* Dark Glass Vignette Overlay for High Contrast Legibility */}
           <div className="absolute inset-0 bg-gradient-to-b from-zinc-950/85 via-zinc-950/60 to-zinc-950/90" />
         </div>
@@ -48,7 +135,9 @@ export const AnimatedBackground = ({
       <div className="absolute inset-x-0 bottom-0 h-32 bg-gradient-to-t from-zinc-950 to-transparent pointer-events-none z-0" />
 
       {/* Foreground Content */}
-      <div className="relative z-10 w-full max-w-full flex flex-col items-center justify-center min-h-full">{children}</div>
+      <div className="relative z-10 w-full max-w-full flex flex-col items-center justify-center min-h-full">
+        {children}
+      </div>
     </div>
   );
 };

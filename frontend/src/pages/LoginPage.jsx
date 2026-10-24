@@ -23,11 +23,11 @@ export const LoginPage = () => {
       setLoading(true);
       let userData = null;
       if (login) {
-        userData = await login(email, password);
+        userData = await login(email, password, role);
       }
       setAuthSuccess(`Signed in successfully! Redirecting to dashboard...`);
       setTimeout(() => {
-        const userRole = (userData?.role || '').toUpperCase();
+        const userRole = (userData?.role || (role === 'admin' ? 'ADMIN' : role === 'landowner' ? 'LANDOWNER' : 'VEHICLE_OWNER')).toUpperCase();
         if (userRole === 'ADMIN') {
           navigate('/admin/dashboard');
         } else if (userRole === 'LANDOWNER') {
@@ -47,13 +47,23 @@ export const LoginPage = () => {
   const handleSocialSignIn = async (provider) => {
     try {
       setSocialLoading(provider);
+      const roleUpper = role === 'landowner' ? 'LANDOWNER' : role === 'admin' ? 'ADMIN' : 'VEHICLE_OWNER';
       if (socialLogin) {
-        await socialLogin(provider, role);
+        await socialLogin(provider, roleUpper);
       }
       setAuthSuccess(`Authenticated via ${provider === 'google' ? 'Google' : 'LinkedIn'}! Redirecting...`);
-      setTimeout(() => navigate('/'), 1000);
+      setTimeout(() => {
+        if (roleUpper === 'ADMIN') {
+          navigate('/admin/dashboard');
+        } else if (roleUpper === 'LANDOWNER') {
+          navigate('/dashboard/landowner');
+        } else {
+          navigate('/dashboard/vehicle-owner');
+        }
+      }, 800);
     } catch (err) {
       console.error('Social login error:', err);
+      setErrorMsg(err.message || 'Social sign-in failed. Please try again.');
     } finally {
       setSocialLoading(null);
     }
@@ -68,8 +78,8 @@ export const LoginPage = () => {
       setEmail('rahul@driver.com');
       setPassword('password123');
     } else {
-      setEmail('admin@tenlea.com');
-      setPassword('password123');
+      setEmail('admin@tenlea');
+      setPassword('admin28');
     }
   };
 
@@ -250,13 +260,14 @@ export const LoginPage = () => {
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-zinc-300 mb-1.5">Email Address</label>
+              <label className="block text-xs font-semibold text-zinc-300 mb-1.5">Email Address or Admin ID</label>
               <div className="relative">
                 <Mail className="absolute left-3.5 top-3.5 w-4 h-4 text-zinc-400" />
                 <input
-                  type="email"
+                  type="text"
+                  inputMode="email"
                   required
-                  placeholder="name@example.com"
+                  placeholder="admin@tenlea or name@example.com"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   className="w-full pl-10 pr-4 py-3 rounded-xl bg-zinc-950 border border-zinc-800 text-white placeholder-zinc-500 focus:outline-none focus:border-zinc-500 text-xs"

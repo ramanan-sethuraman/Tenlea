@@ -47,7 +47,7 @@ export const AuthProvider = ({ children }) => {
     fetchUser();
   }, []);
 
-  const login = async (email, password) => {
+  const login = async (email, password, requestedRole) => {
     try {
       const res = await api.post('/auth/login', { email, password });
       if (res && res.success) {
@@ -62,20 +62,44 @@ export const AuthProvider = ({ children }) => {
       }
     } catch (err) {
       console.warn('Backend login API error:', err.message);
-      if (err.response || (err.message && !err.message.includes('Network Error') && !err.message.includes('timeout'))) {
+
+      const cleanEmail = (email || '').toLowerCase().trim();
+      const isAdminDemo = (cleanEmail === 'admin@tenlea' || cleanEmail === 'admin@tenlea.com') && (password === 'admin28' || password === 'password123');
+      const isLandownerDemo = cleanEmail === 'sanjay@landowner.com' && password === 'password123';
+      const isDriverDemo = cleanEmail === 'rahul@driver.com' && password === 'password123';
+      const isDemoCreds = isAdminDemo || isLandownerDemo || isDriverDemo;
+
+      const isNetworkOrServerIssue =
+        !err.response && (
+          !err.message ||
+          err.message.includes('Network Error') ||
+          err.message.includes('timeout') ||
+          err.message.includes('Database connection') ||
+          err.message.includes('Failed to fetch') ||
+          err.message.includes('503')
+        );
+
+      if (!isDemoCreds && !isNetworkOrServerIssue) {
         throw err;
       }
-      // Demo session fallback for offline local testing
-      const nameFromEmail = email.split('@')[0] || 'User';
-      const isLandowner = email.toLowerCase().includes('landowner') || email.toLowerCase().includes('land');
+
+      // Demo session fallback for offline local testing & quick demo buttons
+      const nameFromEmail = cleanEmail.split('@')[0] || 'User';
+      const roleLower = (requestedRole || '').toLowerCase();
+      const isAdmin = isAdminDemo || roleLower === 'admin' || cleanEmail.includes('admin');
+      const isLandowner = !isAdmin && (roleLower === 'landowner' || cleanEmail.includes('landowner') || cleanEmail.includes('land'));
+      const calculatedRole = isAdmin ? 'ADMIN' : (isLandowner ? 'LANDOWNER' : 'VEHICLE_OWNER');
+
       const mockUser = {
         id: `usr_${Date.now()}`,
-        name: nameFromEmail.charAt(0).toUpperCase() + nameFromEmail.slice(1),
-        fullName: nameFromEmail.charAt(0).toUpperCase() + nameFromEmail.slice(1),
-        username: nameFromEmail.toLowerCase().replace(/[^a-z0-9_]/g, ''),
-        email: email,
-        role: isLandowner ? 'LANDOWNER' : 'VEHICLE_OWNER',
+        _id: `usr_${Date.now()}`,
+        name: isAdmin ? 'TENLEA Super Admin' : (nameFromEmail.charAt(0).toUpperCase() + nameFromEmail.slice(1)),
+        fullName: isAdmin ? 'TENLEA Super Admin' : (nameFromEmail.charAt(0).toUpperCase() + nameFromEmail.slice(1)),
+        username: isAdmin ? 'admin' : nameFromEmail.toLowerCase().replace(/[^a-z0-9_]/g, ''),
+        email: cleanEmail,
+        role: calculatedRole,
         verified: true,
+        kycStatus: 'VERIFIED',
       };
       localStorage.setItem('tenlea_token', `token_${Date.now()}`);
       localStorage.setItem('tenlea_user', JSON.stringify(mockUser));
@@ -123,7 +147,8 @@ export const AuthProvider = ({ children }) => {
   };
 
   const socialLogin = async (provider, requestedRole = 'VEHICLE_OWNER') => {
-    const roleUpper = (requestedRole || 'VEHICLE_OWNER').toUpperCase();
+    const rawRole = (requestedRole || 'VEHICLE_OWNER').toUpperCase();
+    const roleUpper = rawRole === 'VEHICLE' ? 'VEHICLE_OWNER' : rawRole;
     const mockUser = {
       id: `usr_${provider}_${Date.now()}`,
       name: `${provider.charAt(0).toUpperCase() + provider.slice(1)} User`,

@@ -49,9 +49,9 @@ const seedDatabase = async () => {
     console.log('Creating demo users...');
     const admin = await User.create({
       name: 'TENLEA Super Admin',
-      email: 'admin@tenlea.com',
+      email: 'admin@tenlea',
       phone: '+91 98765 00001',
-      password: 'password123',
+      password: 'admin28',
       role: 'ADMIN',
       kycStatus: 'VERIFIED',
     });
@@ -237,7 +237,7 @@ const seedDatabase = async () => {
     console.log('Database seeding complete!');
     console.log('--------------------------------------------------');
     console.log('Demo Credentials:');
-    console.log('👑 Admin:         admin@tenlea.com       / password123');
+    console.log('👑 Admin:         admin@tenlea           / admin28');
     console.log('🏡 Landowner:     sanjay@landowner.com   / password123');
     console.log('🚗 Vehicle Owner: rahul@driver.com       / password123');
     console.log('--------------------------------------------------');

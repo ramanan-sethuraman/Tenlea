@@ -23,7 +23,7 @@ const connectDB = async () => {
 
   try {
     const conn = await mongoose.connect(mongoUri, {
-      serverSelectionTimeoutMS: 10000,
+      serverSelectionTimeoutMS: 4000,
     });
     console.log(`[MongoDB Connected]: Live Host -> ${conn.connection.host}`);
     isConnecting = false;
@@ -31,7 +31,7 @@ const connectDB = async () => {
     // Auto-seed initial demo dataset if database is fresh
     try {
       const populateDatabase = require('../seedData');
-      populateDatabase();
+      await populateDatabase();
     } catch (e) {
       console.warn('[Auto-seed Warning]:', e.message);
     }
@@ -41,13 +41,26 @@ const connectDB = async () => {
     isConnecting = false;
     console.error(`[MongoDB Error]: Database connection failed: ${error.message}`);
     
-    // Only attempt embedded fallback in local non-production environments
+    // Attempt embedded in-memory fallback in local non-production environments
     if (process.env.NODE_ENV !== 'production' && !process.env.VERCEL) {
       try {
         const { MongoMemoryServer } = require('mongodb-memory-server');
-        const mongod = await MongoMemoryServer.create();
-        const memoryUri = mongod.getUri();
-        return await mongoose.connect(memoryUri);
+        if (!global.__mongodInstance) {
+          global.__mongodInstance = await MongoMemoryServer.create();
+        }
+        const memoryUri = global.__mongodInstance.getUri();
+        const conn = await mongoose.connect(memoryUri);
+        console.log(`[Embedded MongoDB Connected]: In-memory engine active at ${memoryUri}`);
+        
+        // Auto-seed initial demo dataset immediately
+        try {
+          const populateDatabase = require('../seedData');
+          await populateDatabase();
+        } catch (e) {
+          console.warn('[Auto-seed Warning]:', e.message);
+        }
+        
+        return conn;
       } catch (e) {
         console.warn(`[Embedded Mongo Fallback Failed]: ${e.message}`);
       }

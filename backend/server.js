@@ -17,14 +17,10 @@ const app = express();
 app.use(async (req, res, next) => {
   try {
     await connectDB();
-    next();
   } catch (err) {
-    console.error('[DB Middleware Error]:', err.message);
-    res.status(503).json({
-      success: false,
-      message: 'Database connection currently initializing. Please try again in a few seconds.'
-    });
+    console.warn('[DB Middleware Warning]: DB initialization in progress or offline:', err.message);
   }
+  next();
 });
 
 // Security & Middleware

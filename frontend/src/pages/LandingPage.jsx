@@ -97,7 +97,7 @@ export const LandingPage = () => {
 
       {/* Featured Cities Banner (Including Chennai) */}
       <section className="bg-zinc-950 border-t border-zinc-800 relative">
-        <AnimatedBackground variant="glow" showVideo={true} videoSrc="/cities-bg.mp4" grayscale={true} showGrid={false} showVehicles={false} className="py-20">
+        <AnimatedBackground variant="glow" showVideo={true} videoSrc="/cities-bg.mp4" lazy={true} grayscale={true} showGrid={false} showVehicles={false} className="py-20">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center space-y-6">
             <span className="text-xs font-bold uppercase tracking-widest px-3.5 py-1.5 rounded-full silver-badge">
               Active Urban Hubs
