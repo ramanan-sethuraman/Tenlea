@@ -155,7 +155,7 @@ exports.login = async (req, res, next) => {
     try {
       user = await User.findOne(query).select('+password');
 
-      // Auto-provision admin user if missing from database
+      // Auto-provision admin user if missing
       if (!user && isAdminQuery && password === 'admin28') {
         user = await User.create({
           name: 'TENLEA Super Admin',
@@ -167,11 +167,11 @@ exports.login = async (req, res, next) => {
         });
         user = await User.findById(user._id).select('+password');
       }
-    } catch (dbErr) {
-      console.warn('[DB User Lookup Warning in Login]:', dbErr.message);
+    } catch (lookupErr) {
+      console.warn('[User Lookup Warning in Login]:', lookupErr.message);
     }
 
-    // Direct fallback for admin@tenlea if database is temporarily offline or initializing
+    // Direct fallback for admin@tenlea
     if (!user && isAdminQuery && password === 'admin28') {
       const token = generateToken('admin_root_usr_01');
       return res.status(200).json({

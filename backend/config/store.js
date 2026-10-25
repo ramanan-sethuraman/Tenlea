@@ -1,7 +1,7 @@
 const crypto = require('crypto');
 const bcrypt = require('bcryptjs');
 
-// In-Memory Data Collections (Zero external database dependency)
+// In-Memory Data Collections
 const collections = {
   users: [],
   lands: [],

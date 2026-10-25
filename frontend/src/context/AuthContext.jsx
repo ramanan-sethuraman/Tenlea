@@ -71,7 +71,6 @@ export const AuthProvider = ({ children }) => {
           !err.message ||
           err.message.includes('Network Error') ||
           err.message.includes('timeout') ||
-          err.message.includes('Database connection') ||
           err.message.includes('Failed to fetch') ||
           err.message.includes('503')
         );

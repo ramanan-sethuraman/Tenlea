@@ -18,7 +18,6 @@ import {
   Smartphone, 
   Mail, 
   Globe, 
-  Database, 
   Lock, 
   Tv, 
   Volume2, 

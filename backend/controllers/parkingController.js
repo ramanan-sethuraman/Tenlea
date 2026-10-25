@@ -168,15 +168,15 @@ exports.getParkingSpaces = async (req, res, next) => {
       if (maxPrice) query.pricePerDay.$lte = Number(maxPrice);
     }
 
-    let dbSpaces = [];
+    let storedSpaces = [];
     try {
-      dbSpaces = await ParkingSpace.find(query).populate('landId landownerId', 'name email phone address city state latitude longitude');
-    } catch (dbErr) {
-      dbSpaces = [];
+      storedSpaces = await ParkingSpace.find(query).populate('landId landownerId', 'name email phone address city state latitude longitude');
+    } catch (err) {
+      storedSpaces = [];
     }
 
-    // Merge DB results with demoSeedParkingSpaces to ensure full coverage
-    let combinedSpaces = [...dbSpaces];
+    // Merge stored results with demoSeedParkingSpaces to ensure full coverage
+    let combinedSpaces = [...storedSpaces];
 
     if (combinedSpaces.length === 0) {
       combinedSpaces = demoSeedParkingSpaces;
