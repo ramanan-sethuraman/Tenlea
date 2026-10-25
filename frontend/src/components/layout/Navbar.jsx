@@ -3,6 +3,7 @@ import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { Menu, X, ArrowRight, User, LogOut, LayoutDashboard, PlusCircle, Car, ShieldCheck, ChevronDown, RefreshCw, ShieldAlert, Settings as SettingsIcon } from 'lucide-react';
 import { Logo } from '../common/Logo';
 import { useAuth } from '../../context/AuthContext';
+import { FirestoreTestButton } from '../common/FirestoreTestButton';
 
 export const Navbar = () => {
   const [scrolled, setScrolled] = useState(false);
@@ -98,7 +99,8 @@ export const Navbar = () => {
           </nav>
 
           {/* Right Action Bar / User Profile */}
-          <div className="hidden md:flex items-center space-x-4">
+          <div className="hidden md:flex items-center space-x-3">
+            <FirestoreTestButton />
             {user ? (
               /* Logged In State with Clean Three-Lines Menu Button (No DP) */
               <div className="relative" ref={dropdownRef}>
@@ -268,6 +270,7 @@ export const Navbar = () => {
 
           {/* Mobile Hamburger Button */}
           <div className="md:hidden flex items-center gap-2">
+            <FirestoreTestButton />
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
               className="p-2 text-zinc-300 hover:text-white focus:outline-none"

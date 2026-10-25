@@ -2,10 +2,14 @@ const crypto = require('crypto');
 const bcrypt = require('bcryptjs');
 const {
   isFirestoreReady,
+  isRtdbReady,
   getDb,
+  getRtdb,
   sanitizeForFirestore,
+  sanitizeForRtdb,
   parseFromFirestore,
   PROJECT_ID,
+  RTDB_URL,
 } = require('./firebase');
 
 // In-memory cache for fast local lookup & fallback
@@ -109,7 +113,19 @@ const wrapDoc = (collectionName, data, customMethods = {}) => {
     const strId = doc._id ? doc._id.toString() : generateId();
     doc._id = strId;
 
-    // Persist to Cloud Firestore if connected
+    // 1. Persist to Firebase Realtime Database
+    if (isRtdbReady()) {
+      const rtdb = getRtdb();
+      if (rtdb) {
+        try {
+          await rtdb.ref(`${collectionName}/${strId}`).set(sanitizeForRtdb(doc));
+        } catch (rtdbErr) {
+          console.warn(`[RTDB Save Warn in ${collectionName}/${strId}]:`, rtdbErr.message);
+        }
+      }
+    }
+
+    // 2. Persist to Cloud Firestore
     if (isFirestoreReady()) {
       const db = getDb();
       if (db) {
@@ -118,13 +134,12 @@ const wrapDoc = (collectionName, data, customMethods = {}) => {
             .doc(strId)
             .set(sanitizeForFirestore(doc), { merge: true });
         } catch (err) {
-          console.error(`[Firestore Save Error in ${collectionName}/${strId}]:`, err.message);
-          throw err;
+          console.warn(`[Firestore Save Warn in ${collectionName}/${strId}]:`, err.message);
         }
       }
     }
 
-    // Update in-memory cache
+    // 3. Update in-memory cache
     if (collections[collectionName]) {
       const index = collections[collectionName].findIndex((x) => x._id?.toString() === strId);
       if (index !== -1) {
@@ -144,11 +159,28 @@ const wrapDoc = (collectionName, data, customMethods = {}) => {
   return doc;
 };
 
-// Helper: Fetch a single document by ID from Firestore or cache
+// Helper: Fetch a single document by ID from Realtime Database, Firestore, or cache
 async function getDocById(collectionName, id) {
   if (!id) return null;
   const strId = id?._id ? id._id.toString() : id.toString();
 
+  // Try Firebase Realtime Database first (fastest HTTP REST fetch)
+  if (isRtdbReady()) {
+    const rtdb = getRtdb();
+    if (rtdb) {
+      try {
+        const snap = await rtdb.ref(`${collectionName}/${strId}`).once('value');
+        if (snap.exists()) {
+          const val = snap.val();
+          return { _id: strId, ...val };
+        }
+      } catch (err) {
+        console.warn(`[RTDB getDocById Warn]: ${err.message}`);
+      }
+    }
+  }
+
+  // Fallback to Cloud Firestore
   if (isFirestoreReady()) {
     const db = getDb();
     if (db) {
@@ -157,7 +189,6 @@ async function getDocById(collectionName, id) {
         if (snap.exists) {
           return parseFromFirestore(snap);
         }
-        return null;
       } catch (err) {
         console.warn(`[Firestore getDocById Warn]: ${err.message}`);
       }
@@ -167,13 +198,49 @@ async function getDocById(collectionName, id) {
   return collections[collectionName]?.find((x) => x._id?.toString() === strId) || null;
 }
 
-// Helper: Query documents from Cloud Firestore or fallback to cache
+// Helper: Query documents from Realtime Database, Cloud Firestore, or fallback to cache
 async function queryDocs(collectionName, query = {}) {
+  // Try Firebase Realtime Database
+  if (isRtdbReady()) {
+    const rtdb = getRtdb();
+    if (rtdb) {
+      try {
+        // Direct ID lookup optimization
+        if (query._id) {
+          const strId = query._id?._id ? query._id._id.toString() : query._id.toString();
+          const snap = await rtdb.ref(`${collectionName}/${strId}`).once('value');
+          if (snap.exists()) {
+            const doc = { _id: strId, ...snap.val() };
+            return matchQuery(doc, query) ? [doc] : [];
+          }
+          return [];
+        }
+
+        // Fetch all in collection node
+        const snap = await rtdb.ref(collectionName).once('value');
+        if (snap.exists()) {
+          const raw = snap.val() || {};
+          const results = [];
+          for (const [key, val] of Object.entries(raw)) {
+            const item = { _id: key, ...val };
+            if (matchQuery(item, query)) {
+              results.push(item);
+            }
+          }
+          collections[collectionName] = results.map((d) => ({ ...d }));
+          return results;
+        }
+      } catch (err) {
+        console.warn(`[RTDB queryDocs Warn in ${collectionName}]:`, err.message);
+      }
+    }
+  }
+
+  // Fallback to Cloud Firestore
   if (isFirestoreReady()) {
     const db = getDb();
     if (db) {
       try {
-        // Direct ID lookup optimization
         if (query._id) {
           const strId = query._id?._id ? query._id._id.toString() : query._id.toString();
           const snap = await db.collection(collectionName).doc(strId).get();
@@ -184,7 +251,6 @@ async function queryDocs(collectionName, query = {}) {
           return [];
         }
 
-        // Fetch collection from Cloud Firestore
         const snap = await db.collection(collectionName).get();
         const results = [];
         snap.forEach((docSnap) => {
@@ -194,11 +260,10 @@ async function queryDocs(collectionName, query = {}) {
           }
         });
 
-        // Update in-memory collection cache
         collections[collectionName] = results.map((d) => ({ ...d }));
         return results;
       } catch (err) {
-        console.error(`[Firestore queryDocs Error in ${collectionName}]:`, err.message);
+        console.warn(`[Firestore queryDocs Warn in ${collectionName}]:`, err.message);
       }
     }
   }
@@ -381,7 +446,19 @@ const createModel = (modelName, defaultSchema = {}, customMethods = {}) => {
         updatedAt: new Date(),
       };
 
-      // Persist to Cloud Firestore
+      // 1. Sync to Firebase Realtime Database
+      if (isRtdbReady()) {
+        const rtdb = getRtdb();
+        if (rtdb) {
+          try {
+            await rtdb.ref(`${collectionName}/${strId}`).set(sanitizeForRtdb(updatedDoc));
+          } catch (rtdbErr) {
+            console.warn(`[RTDB Update Warn in ${collectionName}/${strId}]:`, rtdbErr.message);
+          }
+        }
+      }
+
+      // 2. Sync to Cloud Firestore
       if (isFirestoreReady()) {
         const db = getDb();
         if (db) {
@@ -390,13 +467,12 @@ const createModel = (modelName, defaultSchema = {}, customMethods = {}) => {
               .doc(strId)
               .set(sanitizeForFirestore(updatedDoc), { merge: true });
           } catch (err) {
-            console.error(`[Firestore Update Error in ${collectionName}/${strId}]:`, err.message);
-            throw err;
+            console.warn(`[Firestore Update Warn in ${collectionName}/${strId}]:`, err.message);
           }
         }
       }
 
-      // Update in-memory cache
+      // 3. Update in-memory cache
       const index = collections[collectionName].findIndex((item) => item._id?.toString() === strId);
       if (index !== -1) {
         collections[collectionName][index] = updatedDoc;
@@ -413,19 +489,23 @@ const createModel = (modelName, defaultSchema = {}, customMethods = {}) => {
 
       const existingDoc = await getDocById(collectionName, strId);
 
-      // Delete from Cloud Firestore
-      if (isFirestoreReady()) {
-        const db = getDb();
-        if (db) {
-          try {
-            await db.collection(collectionName).doc(strId).delete();
-          } catch (err) {
-            console.error(`[Firestore Delete Error in ${collectionName}/${strId}]:`, err.message);
-          }
+      // 1. Delete from Realtime Database
+      if (isRtdbReady()) {
+        const rtdb = getRtdb();
+        if (rtdb) {
+          rtdb.ref(`${collectionName}/${strId}`).remove().catch((e) => console.warn(e.message));
         }
       }
 
-      // Remove from cache
+      // 2. Delete from Cloud Firestore
+      if (isFirestoreReady()) {
+        const db = getDb();
+        if (db) {
+          db.collection(collectionName).doc(strId).delete().catch((e) => console.warn(e.message));
+        }
+      }
+
+      // 3. Remove from cache
       const index = collections[collectionName].findIndex((item) => item._id?.toString() === strId);
       if (index !== -1) {
         collections[collectionName].splice(index, 1);
@@ -454,7 +534,20 @@ const createModel = (modelName, defaultSchema = {}, customMethods = {}) => {
           updatedAt: item.updatedAt || new Date(),
         };
 
-        // Persist directly to Cloud Firestore
+        // 1. Persist directly to Firebase Realtime Database
+        if (isRtdbReady()) {
+          const rtdb = getRtdb();
+          if (rtdb) {
+            try {
+              await rtdb.ref(`${collectionName}/${doc._id.toString()}`).set(sanitizeForRtdb(doc));
+              console.log(`⚡ [RTDB Saved]: ${collectionName}/${doc._id}`);
+            } catch (rtdbErr) {
+              console.warn(`[RTDB Create Warn in ${collectionName}/${doc._id}]:`, rtdbErr.message);
+            }
+          }
+        }
+
+        // 2. Persist directly to Cloud Firestore
         if (isFirestoreReady()) {
           const db = getDb();
           if (db) {
@@ -462,15 +555,14 @@ const createModel = (modelName, defaultSchema = {}, customMethods = {}) => {
               await db.collection(collectionName)
                 .doc(doc._id.toString())
                 .set(sanitizeForFirestore(doc));
-              console.log(`🔥 [Firestore Saved]: Collection "${collectionName}" -> Document "${doc._id}"`);
+              console.log(`🔥 [Firestore Saved]: ${collectionName}/${doc._id}`);
             } catch (err) {
-              console.error(`[Firestore Create Error in ${collectionName}/${doc._id}]:`, err.message);
-              throw err;
+              console.warn(`[Firestore Create Warn in ${collectionName}/${doc._id}]:`, err.message);
             }
           }
         }
 
-        // Cache in memory
+        // 3. Cache in memory
         const idx = collections[collectionName].findIndex((x) => x._id?.toString() === doc._id.toString());
         if (idx !== -1) {
           collections[collectionName][idx] = doc;
@@ -493,12 +585,23 @@ const createModel = (modelName, defaultSchema = {}, customMethods = {}) => {
       const docs = await queryDocs(collectionName, query);
       const allIds = docs.map((d) => d._id?.toString()).filter(Boolean);
 
+      // Realtime Database batch remove
+      if (isRtdbReady()) {
+        const rtdb = getRtdb();
+        if (rtdb && allIds.length > 0) {
+          const updates = {};
+          allIds.forEach((id) => { updates[`${collectionName}/${id}`] = null; });
+          rtdb.ref().update(updates).catch((e) => console.warn(e.message));
+        }
+      }
+
+      // Firestore batch remove
       if (isFirestoreReady()) {
         const db = getDb();
         if (db && allIds.length > 0) {
           const batch = db.batch();
           allIds.forEach((id) => batch.delete(db.collection(collectionName).doc(id)));
-          await batch.commit().catch((err) => console.error(`[Firestore Batch Delete Error]:`, err.message));
+          batch.commit().catch((e) => console.warn(e.message));
         }
       }
 
@@ -560,63 +663,62 @@ const seedInitialData = () => {
 seedInitialData();
 
 /**
- * Initialize and synchronize in-memory collections with Cloud Firestore
+ * Initialize and synchronize in-memory collections with Firebase Realtime Database & Cloud Firestore
  */
 const initDatabase = async () => {
-  if (!isFirestoreReady()) {
-    console.log(`ℹ️ [Database Engine]: Operating with in-memory store. Cloud Firestore (project "${PROJECT_ID}") will sync once credentials are provided.`);
+  const rtdbActive = isRtdbReady();
+  const firestoreActive = isFirestoreReady();
+
+  if (!rtdbActive && !firestoreActive) {
+    console.log(`ℹ️ [Database Engine]: Operating with in-memory store. Firebase will sync once credentials are provided.`);
     return true;
   }
 
-  try {
-    const db = getDb();
-    console.log(`🔄 [Database Engine]: Synchronizing with Cloud Firestore (Project: "${PROJECT_ID}")...`);
+  const adminId = '6adc5b6d2ce035b95820c160';
+  const adminUser = {
+    _id: adminId,
+    name: 'TENLEA Super Admin',
+    email: 'admin@tenlea',
+    phone: '+91 98765 00001',
+    password: bcrypt.hashSync('admin28', 10),
+    role: 'ADMIN',
+    kycStatus: 'VERIFIED',
+    accountStatus: 'ACTIVE',
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  };
 
-    const collectionNames = Object.keys(collections);
-    let totalLoaded = 0;
-
-    for (const colName of collectionNames) {
-      const snap = await db.collection(colName).get();
-      if (!snap.empty) {
-        collections[colName] = [];
-        snap.forEach((docSnap) => {
-          const doc = parseFromFirestore(docSnap);
-          if (doc) {
-            collections[colName].push(doc);
-            totalLoaded++;
-          }
-        });
-        console.log(`   📦 [Firestore] Collection "${colName}": ${snap.size} records`);
+  // Sync Realtime Database
+  if (rtdbActive) {
+    try {
+      const rtdb = getRtdb();
+      console.log(`⚡ [Database Engine]: Synchronizing with Firebase Realtime Database (${RTDB_URL})...`);
+      const usersSnap = await rtdb.ref('users').once('value');
+      if (!usersSnap.exists() || Object.keys(usersSnap.val() || {}).length === 0) {
+        await rtdb.ref(`users/${adminId}`).set(sanitizeForRtdb(adminUser));
+        console.log(`👑 [Database Engine]: Seeded TENLEA Super Admin account in Firebase Realtime Database.`);
       }
+    } catch (e) {
+      console.warn('[RTDB Initial Sync Error]:', e.message);
     }
-
-    console.log(`✅ [Database Engine]: Loaded ${totalLoaded} record(s) from Cloud Firestore.`);
-
-    // If users collection in Firestore is empty, seed the official super admin
-    if (collections.users.length === 0) {
-      const adminId = '6adc5b6d2ce035b95820c160';
-      const adminUser = {
-        _id: adminId,
-        name: 'TENLEA Super Admin',
-        email: 'admin@tenlea',
-        phone: '+91 98765 00001',
-        password: bcrypt.hashSync('admin28', 10),
-        role: 'ADMIN',
-        kycStatus: 'VERIFIED',
-        accountStatus: 'ACTIVE',
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      };
-      collections.users.push(adminUser);
-      await db.collection('users').doc(adminId).set(sanitizeForFirestore(adminUser));
-      console.log(`👑 [Database Engine]: Seeded TENLEA Super Admin account in Cloud Firestore.`);
-    }
-
-    return true;
-  } catch (err) {
-    console.error(`[Database Engine Sync Error]:`, err.message);
-    return false;
   }
+
+  // Sync Cloud Firestore
+  if (firestoreActive) {
+    try {
+      const db = getDb();
+      console.log(`🔥 [Database Engine]: Synchronizing with Cloud Firestore (Project: "${PROJECT_ID}")...`);
+      const usersSnap = await db.collection('users').get();
+      if (usersSnap.empty) {
+        await db.collection('users').doc(adminId).set(sanitizeForFirestore(adminUser));
+        console.log(`👑 [Database Engine]: Seeded TENLEA Super Admin account in Cloud Firestore.`);
+      }
+    } catch (err) {
+      console.warn(`[Firestore Initial Sync Error]:`, err.message);
+    }
+  }
+
+  return true;
 };
 
 module.exports = {

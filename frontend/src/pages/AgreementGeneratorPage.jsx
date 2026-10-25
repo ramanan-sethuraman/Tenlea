@@ -18,16 +18,20 @@ import {
   IndianRupee, 
   FileCheck, 
   ChevronRight, 
-  ChevronDown,
-  ChevronUp,
-  Building2,
-  Eye,
-  EyeOff,
-  Smartphone,
-  KeyRound,
-  CheckCircle2,
-  Loader2
+  ChevronDown, 
+  ChevronUp, 
+  Building2, 
+  Eye, 
+  EyeOff, 
+  Smartphone, 
+  KeyRound, 
+  CheckCircle2, 
+  Loader2,
+  CloudUpload,
+  AlertCircle
 } from 'lucide-react';
+import { db } from '../firebase/config';
+import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 
 export const AgreementGeneratorPage = () => {
   // Generate random serial
@@ -35,6 +39,12 @@ export const AgreementGeneratorPage = () => {
   const [copied, setCopied] = useState(false);
   const [isFormOpen, setIsFormOpen] = useState(true);
   const [isDocOpen, setIsDocOpen] = useState(false);
+
+  // Firestore save state
+  const [savingAgreement, setSavingAgreement] = useState(false);
+  const [agreementSavedMsg, setAgreementSavedMsg] = useState('');
+  const [agreementSavedId, setAgreementSavedId] = useState('');
+  const [agreementErrorMsg, setAgreementErrorMsg] = useState('');
 
   // Landowner Aadhaar OTP state
   const [landownerAadhaarVerified, setLandownerAadhaarVerified] = useState(false);
@@ -283,6 +293,50 @@ export const AgreementGeneratorPage = () => {
     navigator.clipboard.writeText(agreementRef);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
+  };
+
+  const handleSaveAgreementToFirestore = async () => {
+    setSavingAgreement(true);
+    setAgreementSavedMsg('');
+    setAgreementErrorMsg('');
+
+    const agreementPayload = {
+      agreementRef,
+      landownerName: formData.landownerName,
+      landownerPhone: formData.landownerPhone,
+      landownerId: formData.landownerId,
+      vehicleOwnerName: formData.vehicleOwnerName,
+      vehicleOwnerPhone: formData.vehicleOwnerPhone,
+      vehicleOwnerId: formData.vehicleOwnerId,
+      spaceName: formData.spaceName,
+      spaceType: formData.spaceType,
+      spaceAddress: formData.spaceAddress,
+      spotNumber: formData.spotNumber,
+      rentalRate: formData.rentalRate,
+      rateUnit: formData.rateUnit,
+      securityDeposit: formData.securityDeposit,
+      paymentMethod: formData.paymentMethod,
+      vehicleRegNo: formData.vehicleRegNo,
+      vehicleMakeModel: formData.vehicleMakeModel,
+      agreementDate: formData.agreementDate,
+      startDate: formData.startDate,
+      endDate: formData.endDate,
+      status: 'ACTIVE',
+      createdAt: serverTimestamp(),
+    };
+
+    try {
+      console.log('📝 [Firestore]: Adding document to "agreements" collection...', agreementPayload);
+      const docRef = await addDoc(collection(db, 'agreements'), agreementPayload);
+      console.log('✅ [Firestore Success]: Saved agreement document with ID:', docRef.id);
+      setAgreementSavedId(docRef.id);
+      setAgreementSavedMsg(`Agreement ${agreementRef} successfully saved to Firestore! Doc ID: ${docRef.id}`);
+    } catch (err) {
+      console.error('❌ [Firestore Error]:', err.code, err.message, err);
+      setAgreementErrorMsg(`Failed to save agreement: [${err.code || 'unknown'}] ${err.message}`);
+    } finally {
+      setSavingAgreement(false);
+    }
   };
 
   const handleDownloadText = () => {
@@ -1527,21 +1581,57 @@ Verified Reference: ${agreementRef}
               </div>
 
               {/* Action Buttons Displayed Below Document Preview (Hidden on Print) */}
-              <div className="no-print mt-8 flex flex-wrap items-center justify-center gap-4 pt-6 border-t border-zinc-800">
-                <button
-                  onClick={handlePrint}
-                  className="btn-silver-primary text-zinc-950 flex items-center space-x-2.5 px-7 py-3.5 rounded-2xl font-bold text-xs uppercase tracking-wider shadow-xl hover:scale-105 transition-all cursor-pointer"
-                >
-                  <Printer className="w-4 h-4 text-zinc-950" />
-                  <span>PRINT / SAVE PDF</span>
-                </button>
-                <button
-                  onClick={handleDownloadText}
-                  className="btn-silver-secondary text-zinc-950 px-7 py-3.5 rounded-2xl font-semibold text-xs transition-all flex items-center space-x-2.5 shadow-lg hover:scale-105 cursor-pointer"
-                >
-                  <Download className="w-4 h-4 text-zinc-950" />
-                  <span>Download Text</span>
-                </button>
+              <div className="no-print mt-8 space-y-4 pt-6 border-t border-zinc-800">
+                {agreementSavedMsg && (
+                  <div className="max-w-md mx-auto p-4 rounded-2xl bg-emerald-950/80 border border-emerald-500/50 text-emerald-300 text-xs flex items-center gap-3 shadow-lg">
+                    <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0" />
+                    <div className="flex-1 font-mono">{agreementSavedMsg}</div>
+                    <button onClick={() => setAgreementSavedMsg('')} className="text-emerald-400 hover:text-white font-bold text-sm">✕</button>
+                  </div>
+                )}
+
+                {agreementErrorMsg && (
+                  <div className="max-w-md mx-auto p-4 rounded-2xl bg-rose-950/80 border border-rose-500/50 text-rose-300 text-xs flex items-center gap-3 shadow-lg">
+                    <AlertCircle className="w-5 h-5 text-rose-400 shrink-0" />
+                    <div className="flex-1">{agreementErrorMsg}</div>
+                    <button onClick={() => setAgreementErrorMsg('')} className="text-rose-400 hover:text-white font-bold text-sm">✕</button>
+                  </div>
+                )}
+
+                <div className="flex flex-wrap items-center justify-center gap-4">
+                  <button
+                    onClick={handleSaveAgreementToFirestore}
+                    disabled={savingAgreement}
+                    className="btn-silver-primary text-zinc-950 flex items-center space-x-2.5 px-7 py-3.5 rounded-2xl font-bold text-xs uppercase tracking-wider shadow-xl hover:scale-105 transition-all cursor-pointer disabled:opacity-50"
+                  >
+                    {savingAgreement ? (
+                      <>
+                        <Loader2 className="w-4 h-4 animate-spin text-zinc-950" />
+                        <span>Saving to Firestore...</span>
+                      </>
+                    ) : (
+                      <>
+                        <CloudUpload className="w-4 h-4 text-zinc-950" />
+                        <span>Save Agreement to Firestore</span>
+                      </>
+                    )}
+                  </button>
+
+                  <button
+                    onClick={handlePrint}
+                    className="btn-silver-secondary text-zinc-950 flex items-center space-x-2.5 px-7 py-3.5 rounded-2xl font-bold text-xs uppercase tracking-wider shadow-xl hover:scale-105 transition-all cursor-pointer"
+                  >
+                    <Printer className="w-4 h-4 text-zinc-950" />
+                    <span>PRINT / SAVE PDF</span>
+                  </button>
+                  <button
+                    onClick={handleDownloadText}
+                    className="px-7 py-3.5 rounded-2xl bg-zinc-900 border border-zinc-700 hover:border-zinc-500 text-white font-semibold text-xs transition-all flex items-center space-x-2.5 shadow-lg hover:scale-105 cursor-pointer"
+                  >
+                    <Download className="w-4 h-4 text-white" />
+                    <span>Download Text</span>
+                  </button>
+                </div>
               </div>
             </div>
           </div>

@@ -63,29 +63,46 @@ const mountRoutes = (prefix) => {
   app.use(`${prefix}/agreements`, agreementRoutes);
   app.use(`${prefix}/admin`, adminRoutes);
   app.get(`${prefix}/health`, async (req, res) => {
-    const { isFirestoreReady, PROJECT_ID, DATABASE_ID, getLastError, getCredentialSource, getDb } = require('./config/firebase');
-    const isReady = isFirestoreReady();
-    let stats = null;
-    if (isReady) {
+    const { isFirestoreReady, isRtdbReady, PROJECT_ID, DATABASE_ID, RTDB_URL, getLastError, getCredentialSource, getDb, getRtdb } = require('./config/firebase');
+    const firestoreReady = isFirestoreReady();
+    const rtdbReady = isRtdbReady();
+
+    let stats = {};
+    if (rtdbReady) {
+      try {
+        const rtdb = getRtdb();
+        const usersSnap = await rtdb.ref('users').once('value');
+        const landsSnap = await rtdb.ref('lands').once('value');
+        const parkingSnap = await rtdb.ref('parkingspaces').once('value');
+        stats.rtdb = {
+          usersCount: Object.keys(usersSnap.val() || {}).length,
+          landsCount: Object.keys(landsSnap.val() || {}).length,
+          parkingSpacesCount: Object.keys(parkingSnap.val() || {}).length,
+        };
+      } catch (e) {
+        stats.rtdbError = e.message;
+      }
+    }
+
+    if (firestoreReady) {
       try {
         const db = getDb();
         const usersSnap = await db.collection('users').get();
-        const landsSnap = await db.collection('lands').get();
-        const parkingSnap = await db.collection('parkingspaces').get();
-        stats = {
+        stats.firestore = {
           usersCount: usersSnap.size,
-          landsCount: landsSnap.size,
-          parkingSpacesCount: parkingSnap.size,
         };
       } catch (e) {
-        stats = { queryError: e.message };
+        stats.firestoreError = e.message;
       }
     }
+
     res.status(200).json({
       success: true,
       message: 'TENLEA Service Operating Normally',
-      database: isReady ? 'Cloud Firestore (Connected & Synced)' : 'In-Memory Store (Awaiting Service Account Key)',
-      firestoreConnected: isReady,
+      database: rtdbReady || firestoreReady ? 'Firebase Connected & Synced' : 'In-Memory Store (Awaiting Credentials)',
+      realtimeDatabaseConnected: rtdbReady,
+      realtimeDatabaseUrl: RTDB_URL,
+      firestoreConnected: firestoreReady,
       firestoreProject: PROJECT_ID,
       firestoreDatabase: DATABASE_ID,
       credentialSource: getCredentialSource(),

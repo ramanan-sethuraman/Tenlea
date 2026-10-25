@@ -1,15 +1,18 @@
 const { initializeApp, cert, getApps } = require('firebase-admin/app');
 const { getFirestore, Timestamp } = require('firebase-admin/firestore');
+const { getDatabase } = require('firebase-admin/database');
 const fs = require('fs');
 const path = require('path');
 
 let firestoreInstance = null;
+let rtdbInstance = null;
 let isConfigured = false;
 let lastInitError = null;
 let credentialSource = 'none';
 
 const PROJECT_ID = process.env.FIREBASE_PROJECT_ID || 'tenlea';
 const DATABASE_ID = process.env.FIREBASE_DATABASE_ID || 'default';
+const RTDB_URL = process.env.FIREBASE_DATABASE_URL || 'https://tenlea-default-rtdb.firebaseio.com';
 
 /**
  * Robust parsing of credentials from all possible environments (Vercel, Railway, Local)
@@ -119,8 +122,8 @@ function parseCredentialObject() {
  * Initialize Firebase Admin SDK for project 'tenlea'
  */
 function initFirebase() {
-  if (firestoreInstance) {
-    return { db: firestoreInstance, isConfigured };
+  if (firestoreInstance && rtdbInstance) {
+    return { db: firestoreInstance, rtdb: rtdbInstance, isConfigured };
   }
 
   const { credential, source, error } = parseCredentialObject();
@@ -137,24 +140,39 @@ function initFirebase() {
         app = initializeApp({
           credential,
           projectId: PROJECT_ID,
+          databaseURL: RTDB_URL,
         });
       } else {
         app = getApps()[0];
       }
 
-      // Initialize with databaseId ('default' for modern Firebase consoles)
+      // 1. Initialize Firebase Realtime Database
       try {
-        firestoreInstance = getFirestore(app, DATABASE_ID);
-      } catch (e) {
-        firestoreInstance = getFirestore(app);
+        rtdbInstance = getDatabase(app);
+        console.log(`⚡ [Firebase Realtime DB]: Connected to ${RTDB_URL}`);
+      } catch (rtdbErr) {
+        console.warn(`[RTDB Init Warning]:`, rtdbErr.message);
       }
 
-      firestoreInstance.settings({ ignoreUndefinedProperties: true });
-      isConfigured = true;
+      // 2. Initialize Cloud Firestore
+      try {
+        firestoreInstance = getFirestore(app, DATABASE_ID);
+        firestoreInstance.settings({ ignoreUndefinedProperties: true });
+        console.log(`🔥 [Firebase Firestore]: Connected to database "${DATABASE_ID}" in project "${PROJECT_ID}"`);
+      } catch (e) {
+        try {
+          firestoreInstance = getFirestore(app);
+          firestoreInstance.settings({ ignoreUndefinedProperties: true });
+        } catch (fErr) {
+          console.warn(`[Firestore Init Warning]:`, fErr.message);
+        }
+      }
+
+      isConfigured = Boolean(rtdbInstance || firestoreInstance);
       lastInitError = null;
-      console.log(`🔥 [Firebase Firestore]: Successfully connected to database "${DATABASE_ID}" in project "${PROJECT_ID}" (Source: ${credentialSource})`);
+      console.log(`✅ [Firebase]: Successfully authenticated (Source: ${credentialSource})`);
     } catch (err) {
-      console.error(`[Firebase Firestore Error]: Initialization failed:`, err.message);
+      console.error(`[Firebase Initialization Error]:`, err.message);
       isConfigured = false;
       lastInitError = err.message;
     }
@@ -164,16 +182,16 @@ function initFirebase() {
       try {
         let app;
         if (getApps().length === 0) {
-          app = initializeApp({ projectId: PROJECT_ID });
+          app = initializeApp({ projectId: PROJECT_ID, databaseURL: RTDB_URL });
         } else {
           app = getApps()[0];
         }
+        rtdbInstance = getDatabase(app);
         firestoreInstance = getFirestore(app, DATABASE_ID);
-        firestoreInstance.settings({ ignoreUndefinedProperties: true });
         isConfigured = true;
         credentialSource = 'GOOGLE_APPLICATION_CREDENTIALS (ADC)';
         lastInitError = null;
-        console.log(`🔥 [Firebase Firestore]: Connected via Application Default Credentials`);
+        console.log(`🔥 [Firebase]: Connected via Application Default Credentials`);
       } catch (err) {
         isConfigured = false;
         lastInitError = err.message;
@@ -183,7 +201,7 @@ function initFirebase() {
     }
   }
 
-  return { db: firestoreInstance, isConfigured };
+  return { db: firestoreInstance, rtdb: rtdbInstance, isConfigured };
 }
 
 /**
@@ -194,6 +212,16 @@ function isFirestoreReady() {
     initFirebase();
   }
   return isConfigured && firestoreInstance !== null;
+}
+
+/**
+ * Check if Realtime Database is actively configured and reachable
+ */
+function isRtdbReady() {
+  if (!rtdbInstance) {
+    initFirebase();
+  }
+  return isConfigured && rtdbInstance !== null;
 }
 
 /**
@@ -212,6 +240,29 @@ function sanitizeForFirestore(data) {
       clean[key] = value.map((item) => (typeof item === 'object' && item !== null ? sanitizeForFirestore(item) : item));
     } else if (value && typeof value === 'object' && !(value instanceof Timestamp)) {
       clean[key] = sanitizeForFirestore(value);
+    } else {
+      clean[key] = value;
+    }
+  }
+  return clean;
+}
+
+/**
+ * Clean data for Firebase Realtime Database (Dates to ISO strings, remove functions and undefined)
+ */
+function sanitizeForRtdb(data) {
+  if (!data || typeof data !== 'object') return data;
+
+  const clean = {};
+  for (const [key, value] of Object.entries(data)) {
+    if (typeof value === 'function' || value === undefined) continue;
+    if (key.startsWith('$')) continue;
+    if (value instanceof Date) {
+      clean[key] = value.toISOString();
+    } else if (Array.isArray(value)) {
+      clean[key] = value.map((item) => (typeof item === 'object' && item !== null ? sanitizeForRtdb(item) : item));
+    } else if (value && typeof value === 'object') {
+      clean[key] = sanitizeForRtdb(value);
     } else {
       clean[key] = value;
     }
@@ -239,15 +290,22 @@ function parseFromFirestore(docSnap) {
 module.exports = {
   PROJECT_ID,
   DATABASE_ID,
+  RTDB_URL,
   initFirebase,
   isFirestoreReady,
+  isRtdbReady,
   getLastError: () => lastInitError,
   getCredentialSource: () => credentialSource,
   sanitizeForFirestore,
+  sanitizeForRtdb,
   parseFromFirestore,
   Timestamp,
   getDb: () => {
     if (!firestoreInstance) initFirebase();
     return firestoreInstance;
+  },
+  getRtdb: () => {
+    if (!rtdbInstance) initFirebase();
+    return rtdbInstance;
   },
 };

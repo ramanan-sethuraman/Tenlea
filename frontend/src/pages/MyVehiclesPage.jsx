@@ -1,8 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { Navbar } from '../components/layout/Navbar';
 import { Footer } from '../components/layout/Footer';
-import { Car, Plus, Trash2, Inbox } from 'lucide-react';
+import { Car, Plus, Trash2, Inbox, CheckCircle2, AlertCircle, Loader2 } from 'lucide-react';
 import api from '../services/api';
+import { db } from '../firebase/config';
+import { collection, addDoc, getDocs, deleteDoc, doc, serverTimestamp, query, orderBy } from 'firebase/firestore';
+import { useAuth } from '../context/AuthContext';
 
 export const MyVehiclesPage = () => {
   const [vehicles, setVehicles] = useState([]);
@@ -11,10 +14,35 @@ export const MyVehiclesPage = () => {
   const [number, setNumber] = useState('');
   const [type, setType] = useState('4-Wheeler Car / SUV');
   const [loading, setLoading] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [successMsg, setSuccessMsg] = useState('');
+  const [errorMsg, setErrorMsg] = useState('');
+  const { user } = useAuth();
 
   const fetchVehicles = async () => {
     try {
       setLoading(true);
+      // 1. Try real Firestore first
+      try {
+        const vColl = collection(db, 'vehicles');
+        const snap = await getDocs(vColl);
+        if (!snap.empty) {
+          const list = snap.docs.map(d => ({
+            id: d.id,
+            type: d.data().vehicleType || '4-Wheeler Car / SUV',
+            brand: d.data().brand,
+            model: d.data().model,
+            number: d.data().vehicleNumber,
+          }));
+          setVehicles(list);
+          setLoading(false);
+          return;
+        }
+      } catch (fsErr) {
+        console.warn('Firestore fetch vehicles notice:', fsErr.code, fsErr.message);
+      }
+
+      // 2. Fallback to API
       const res = await api.get('/vehicles');
       if (res && res.data) {
         const formatted = res.data.map((v) => ({
@@ -40,44 +68,72 @@ export const MyVehiclesPage = () => {
   const handleAdd = async (e) => {
     e.preventDefault();
     if (!brand || !model || !number) return;
+    setSaving(true);
+    setSuccessMsg('');
+    setErrorMsg('');
+
+    const vehiclePayload = {
+      vehicleType: type,
+      brand: brand.trim(),
+      model: model.trim(),
+      vehicleNumber: number.trim().toUpperCase(),
+      userId: user?._id || user?.id || 'guest_user',
+      userEmail: user?.email || 'guest@tenlea.com',
+      userName: user?.name || 'Vehicle Owner',
+      createdAt: serverTimestamp(),
+    };
 
     try {
-      const res = await api.post('/vehicles', {
-        vehicleType: type,
-        brand,
-        model,
-        vehicleNumber: number.toUpperCase(),
-      });
-      if (res && res.data) {
-        setVehicles((prev) => [
-          ...prev,
-          {
-            id: res.data._id || String(Date.now()),
-            type: res.data.vehicleType || type,
-            brand: res.data.brand || brand,
-            model: res.data.model || model,
-            number: res.data.vehicleNumber || number.toUpperCase(),
-          },
-        ]);
-      }
-    } catch (err) {
+      console.log('📝 [Firestore]: Adding document to "vehicles" collection...', vehiclePayload);
+      const docRef = await addDoc(collection(db, 'vehicles'), vehiclePayload);
+      console.log('✅ [Firestore Success]: Saved vehicle document with ID:', docRef.id);
+
+      setSuccessMsg(`Vehicle successfully saved to Firestore! Doc ID: ${docRef.id}`);
       setVehicles((prev) => [
+        {
+          id: docRef.id,
+          type,
+          brand: vehiclePayload.brand,
+          model: vehiclePayload.model,
+          number: vehiclePayload.vehicleNumber,
+        },
         ...prev,
-        { id: String(Date.now()), type, brand, model, number: number.toUpperCase() },
       ]);
+
+      // Sync with backend API
+      try {
+        await api.post('/vehicles', { ...vehiclePayload, _id: docRef.id });
+      } catch (apiErr) {
+        console.warn('[Backend Sync Note]:', apiErr.message);
+      }
+
+      setBrand('');
+      setModel('');
+      setNumber('');
+    } catch (err) {
+      console.error('❌ [Firestore Error]:', err.code, err.message, err);
+      setErrorMsg(`Failed to save vehicle: [${err.code || 'unknown'}] ${err.message}`);
+    } finally {
+      setSaving(false);
     }
-    setBrand('');
-    setModel('');
-    setNumber('');
   };
 
   const handleDelete = async (id) => {
     try {
-      await api.delete(`/vehicles/${id}`);
+      console.log('🗑️ [Firestore]: Deleting document from "vehicles":', id);
+      await deleteDoc(doc(db, 'vehicles', id));
+      console.log('✅ [Firestore Success]: Deleted vehicle ID:', id);
+      setSuccessMsg(`Vehicle ${id} deleted successfully.`);
+      setVehicles((prev) => prev.filter((v) => v.id !== id));
+      try {
+        await api.delete(`/vehicles/${id}`);
+      } catch (apiErr) {
+        console.warn('[Backend delete note]:', apiErr.message);
+      }
     } catch (err) {
-      console.warn('Vehicle deleted locally');
+      console.error('❌ [Firestore Delete Error]:', err.code, err.message);
+      setErrorMsg(`Failed to delete vehicle: [${err.code || 'unknown'}] ${err.message}`);
     }
-    setVehicles((prev) => prev.filter((v) => v.id !== id));
   };
 
   return (
@@ -92,6 +148,22 @@ export const MyVehiclesPage = () => {
             <p className="text-xs text-zinc-400 mt-1">Register vehicles for safe parking bookings & digital agreements</p>
           </div>
         </div>
+
+        {successMsg && (
+          <div className="mb-6 p-4 rounded-2xl bg-emerald-950/80 border border-emerald-500/50 text-emerald-300 text-xs flex items-center gap-3 shadow-lg">
+            <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0" />
+            <div className="flex-1 font-mono">{successMsg}</div>
+            <button onClick={() => setSuccessMsg('')} className="text-emerald-400 hover:text-white font-bold text-sm">✕</button>
+          </div>
+        )}
+
+        {errorMsg && (
+          <div className="mb-6 p-4 rounded-2xl bg-rose-950/80 border border-rose-500/50 text-rose-300 text-xs flex items-center gap-3 shadow-lg">
+            <AlertCircle className="w-5 h-5 text-rose-400 shrink-0" />
+            <div className="flex-1">{errorMsg}</div>
+            <button onClick={() => setErrorMsg('')} className="text-rose-400 hover:text-white font-bold text-sm">✕</button>
+          </div>
+        )}
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
           
@@ -153,9 +225,17 @@ export const MyVehiclesPage = () => {
 
               <button
                 type="submit"
-                className="w-full py-3 rounded-xl bg-white hover:bg-zinc-200 text-zinc-950 font-bold text-xs shadow-lg transition-all"
+                disabled={saving}
+                className="w-full py-3 rounded-xl bg-white hover:bg-zinc-200 text-zinc-950 font-bold text-xs shadow-lg transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
               >
-                Register Vehicle
+                {saving ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin text-zinc-950" />
+                    <span>Saving to Firestore...</span>
+                  </>
+                ) : (
+                  <span>Register Vehicle</span>
+                )}
               </button>
             </form>
           </div>

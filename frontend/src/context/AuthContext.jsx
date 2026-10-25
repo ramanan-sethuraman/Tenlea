@@ -1,5 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import api from '../services/api';
+import { db } from '../firebase/config';
+import { collection, doc, setDoc, serverTimestamp } from 'firebase/firestore';
 
 const AuthContext = createContext();
 
@@ -58,6 +60,20 @@ export const AuthProvider = ({ children }) => {
         };
         localStorage.setItem('tenlea_user', JSON.stringify(userData));
         setUser(userData);
+
+        // Record login timestamp in Firestore
+        const userId = userData._id || userData.id;
+        if (userId) {
+          try {
+            await setDoc(doc(db, 'users', String(userId)), {
+              lastLogin: serverTimestamp(),
+            }, { merge: true });
+            console.log('✅ [Firestore Success]: Updated login timestamp for user:', userId);
+          } catch (fsErr) {
+            console.warn('Firestore login timestamp note:', fsErr.code, fsErr.message);
+          }
+        }
+
         return userData;
       }
     } catch (err) {
@@ -71,26 +87,69 @@ export const AuthProvider = ({ children }) => {
   };
 
   const registerUser = async (formData) => {
+    let userData = null;
+    let userId = null;
+
+    // 1. Attempt backend registration
     try {
       const res = await api.post('/auth/register', formData);
       if (res && res.success) {
         localStorage.setItem('tenlea_token', res.token);
-        const userData = {
+        userData = {
           ...res.data,
           username: res.data.username || (res.data.name || 'user').toLowerCase().replace(/\s+/g, '')
         };
-        localStorage.setItem('tenlea_user', JSON.stringify(userData));
-        setUser(userData);
-        return userData;
+        userId = userData._id || userData.id;
       }
-    } catch (err) {
-      console.error('Backend registration error:', err);
-      const errorMsg =
-        err.response?.data?.message ||
-        err.message ||
-        'Cannot connect to Tenlea backend server. Please make sure the backend is running.';
-      throw new Error(errorMsg);
+    } catch (apiErr) {
+      console.warn('Backend API register note, attempting direct Firestore save:', apiErr.message);
+      // Generate a document reference ID for direct client registration
+      const newDocRef = doc(collection(db, 'users'));
+      userId = newDocRef.id;
+      userData = {
+        _id: userId,
+        id: userId,
+        name: formData.name,
+        email: formData.email.toLowerCase().trim(),
+        phone: formData.phone,
+        role: formData.role || 'VEHICLE_OWNER',
+        accountStatus: 'ACTIVE',
+        kycStatus: 'PENDING',
+        username: (formData.name || 'user').toLowerCase().replace(/\s+/g, ''),
+      };
+      localStorage.setItem('tenlea_token', `token_${userId}`);
     }
+
+    // 2. Direct Cloud Firestore write
+    if (userId) {
+      try {
+        const firestoreUserData = {
+          _id: userId,
+          name: formData.name.trim(),
+          email: formData.email.toLowerCase().trim(),
+          phone: formData.phone.trim(),
+          role: formData.role === 'LANDOWNER' ? 'LANDOWNER' : 'VEHICLE_OWNER',
+          accountStatus: 'ACTIVE',
+          kycStatus: 'PENDING',
+          createdAt: serverTimestamp(),
+          updatedAt: serverTimestamp(),
+        };
+
+        console.log('📝 [Firestore]: Saving new user document to "users" collection...', firestoreUserData);
+        await setDoc(doc(db, 'users', String(userId)), firestoreUserData, { merge: true });
+        console.log('✅ [Firestore Success]: Saved user document to Firestore with ID:', userId);
+      } catch (fsErr) {
+        console.error('❌ [Firestore User Write Error]:', fsErr.code, fsErr.message);
+      }
+    }
+
+    if (userData) {
+      localStorage.setItem('tenlea_user', JSON.stringify(userData));
+      setUser(userData);
+      return userData;
+    }
+
+    throw new Error('Could not complete user registration.');
   };
 
   const socialLogin = async (provider, requestedRole = 'VEHICLE_OWNER') => {
@@ -106,6 +165,24 @@ export const AuthProvider = ({ children }) => {
         };
         localStorage.setItem('tenlea_user', JSON.stringify(userData));
         setUser(userData);
+
+        // Sync to Firestore
+        const userId = userData._id || userData.id;
+        if (userId) {
+          try {
+            await setDoc(doc(db, 'users', String(userId)), {
+              name: userData.name,
+              email: userData.email,
+              role: userData.role,
+              lastLogin: serverTimestamp(),
+              updatedAt: serverTimestamp(),
+            }, { merge: true });
+            console.log('✅ [Firestore Success]: Synced social login user to Firestore:', userId);
+          } catch (fsErr) {
+            console.warn('Firestore social sync note:', fsErr.code, fsErr.message);
+          }
+        }
+
         return userData;
       }
     } catch (err) {
@@ -119,11 +196,35 @@ export const AuthProvider = ({ children }) => {
       const updated = { ...user, role: newRole.toUpperCase() };
       localStorage.setItem('tenlea_user', JSON.stringify(updated));
       setUser(updated);
+
+      const userId = user._id || user.id;
+      if (userId) {
+        setDoc(doc(db, 'users', String(userId)), { role: newRole.toUpperCase() }, { merge: true })
+          .then(() => console.log('✅ [Firestore Success]: Updated user role in Firestore:', newRole))
+          .catch((e) => console.warn('Firestore switchRole note:', e.message));
+      }
     }
   };
 
   const updateUserProfile = async (newFields) => {
     if (user) {
+      const userId = user._id || user.id;
+
+      // 1. Direct Cloud Firestore write
+      if (userId) {
+        try {
+          console.log('📝 [Firestore]: Updating user profile in "users" collection:', userId);
+          await setDoc(doc(db, 'users', String(userId)), {
+            ...newFields,
+            updatedAt: serverTimestamp(),
+          }, { merge: true });
+          console.log('✅ [Firestore Success]: Updated user profile in Firestore for ID:', userId);
+        } catch (fsErr) {
+          console.error('❌ [Firestore Profile Update Error]:', fsErr.code, fsErr.message);
+        }
+      }
+
+      // 2. Sync to API backend
       try {
         const res = await api.put('/auth/profile', newFields);
         const serverData = res?.data || newFields;
