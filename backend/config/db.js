@@ -1,9 +1,7 @@
-// TENLEA Zero-Dependency Database Engine
-// Zero-dependency fast in-memory store
-const { collections } = require('./store');
+const { initDatabase, collections } = require('./store');
 
 const connectDB = async () => {
-  return true;
+  return await initDatabase();
 };
 
 module.exports = connectDB;

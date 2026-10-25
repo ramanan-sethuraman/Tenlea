@@ -1,7 +1,14 @@
 const crypto = require('crypto');
 const bcrypt = require('bcryptjs');
+const {
+  isFirestoreReady,
+  getDb,
+  sanitizeForFirestore,
+  parseFromFirestore,
+  PROJECT_ID,
+} = require('./firebase');
 
-// In-Memory Data Collections (Zero external database dependency)
+// Data Collections (in-memory cache synced with Cloud Firestore)
 const collections = {
   users: [],
   lands: [],
@@ -100,6 +107,21 @@ const wrapDoc = (collectionName, data, customMethods = {}) => {
     } else {
       collections[collectionName].push({ ...doc });
     }
+
+    // Persist to Cloud Firestore if connected
+    if (isFirestoreReady()) {
+      const db = getDb();
+      if (db && doc._id) {
+        try {
+          await db.collection(collectionName)
+            .doc(doc._id.toString())
+            .set(sanitizeForFirestore(doc), { merge: true });
+        } catch (err) {
+          console.error(`[Firestore Save Error in ${collectionName}/${doc._id}]:`, err.message);
+        }
+      }
+    }
+
     return wrapDoc(collectionName, doc, customMethods);
   };
 
@@ -261,6 +283,21 @@ const createModel = (modelName, defaultSchema = {}, customMethods = {}) => {
         updatedAt: new Date(),
       };
       collections[collectionName][index] = updatedDoc;
+
+      // Sync to Cloud Firestore
+      if (isFirestoreReady()) {
+        const db = getDb();
+        if (db && strId) {
+          try {
+            await db.collection(collectionName)
+              .doc(strId)
+              .set(sanitizeForFirestore(updatedDoc), { merge: true });
+          } catch (err) {
+            console.error(`[Firestore Update Error in ${collectionName}/${strId}]:`, err.message);
+          }
+        }
+      }
+
       return wrapDoc(collectionName, options.new !== false ? updatedDoc : oldDoc, customMethods);
     },
 
@@ -269,6 +306,21 @@ const createModel = (modelName, defaultSchema = {}, customMethods = {}) => {
       const index = collections[collectionName].findIndex((item) => item._id?.toString() === strId);
       if (index === -1) return null;
       const removed = collections[collectionName].splice(index, 1)[0];
+
+      // Sync to Cloud Firestore
+      if (isFirestoreReady()) {
+        const db = getDb();
+        if (db && strId) {
+          try {
+            await db.collection(collectionName)
+              .doc(strId)
+              .delete();
+          } catch (err) {
+            console.error(`[Firestore Delete Error in ${collectionName}/${strId}]:`, err.message);
+          }
+        }
+      }
+
       return wrapDoc(collectionName, removed, customMethods);
     },
 
@@ -293,6 +345,21 @@ const createModel = (modelName, defaultSchema = {}, customMethods = {}) => {
         };
 
         collections[collectionName].push(doc);
+
+        // Sync to Cloud Firestore
+        if (isFirestoreReady()) {
+          const db = getDb();
+          if (db) {
+            try {
+              await db.collection(collectionName)
+                .doc(doc._id.toString())
+                .set(sanitizeForFirestore(doc));
+            } catch (err) {
+              console.error(`[Firestore Create Error in ${collectionName}/${doc._id}]:`, err.message);
+            }
+          }
+        }
+
         created.push(wrapDoc(collectionName, doc, customMethods));
       }
 
@@ -306,12 +373,39 @@ const createModel = (modelName, defaultSchema = {}, customMethods = {}) => {
     async deleteMany(query = {}) {
       if (!query || Object.keys(query).length === 0) {
         const count = collections[collectionName].length;
+        const allIds = collections[collectionName].map((d) => d._id?.toString()).filter(Boolean);
         collections[collectionName] = [];
+
+        if (isFirestoreReady()) {
+          const db = getDb();
+          if (db && allIds.length > 0) {
+            const batch = db.batch();
+            allIds.forEach((id) => batch.delete(db.collection(collectionName).doc(id)));
+            batch.commit().catch((err) => console.error(`[Firestore Batch Delete Error]:`, err.message));
+          }
+        }
+
         return { deletedCount: count };
       }
+
+      const toDelete = collections[collectionName].filter((item) => matchQuery(item, query));
       const keep = collections[collectionName].filter((item) => !matchQuery(item, query));
-      const deletedCount = collections[collectionName].length - keep.length;
+      const deletedCount = toDelete.length;
       collections[collectionName] = keep;
+
+      if (isFirestoreReady()) {
+        const db = getDb();
+        if (db && toDelete.length > 0) {
+          const batch = db.batch();
+          toDelete.forEach((doc) => {
+            if (doc._id) {
+              batch.delete(db.collection(collectionName).doc(doc._id.toString()));
+            }
+          });
+          batch.commit().catch((err) => console.error(`[Firestore Batch Delete Error]:`, err.message));
+        }
+      }
+
       return { deletedCount };
     },
 
@@ -346,45 +440,95 @@ const createModel = (modelName, defaultSchema = {}, customMethods = {}) => {
   };
 };
 
-// Pre-seed Demo Dataset Immediately on Load
+// Pre-seed Demo Dataset Immediately on Load for local fallback
 const seedInitialData = () => {
-  // Only Official Admin Account
   const adminId = '6adc5b6d2ce035b95820c160';
 
-  collections.users = [
-    {
-      _id: adminId,
-      name: 'TENLEA Super Admin',
-      email: 'admin@tenlea',
-      phone: '+91 98765 00001',
-      password: bcrypt.hashSync('admin28', 10),
-      role: 'ADMIN',
-      kycStatus: 'VERIFIED',
-      accountStatus: 'ACTIVE',
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    },
-  ];
-
-  collections.lands = [];
-  collections.parkingspaces = [];
-  collections.vehicles = [];
-  collections.bookings = [];
-  collections.agreements = [];
-  collections.payments = [];
-  collections.kycs = [];
-  collections.disputes = [];
-  collections.notifications = [];
-  collections.reviews = [];
+  if (!collections.users.some((u) => u._id === adminId)) {
+    collections.users = [
+      {
+        _id: adminId,
+        name: 'TENLEA Super Admin',
+        email: 'admin@tenlea',
+        phone: '+91 98765 00001',
+        password: bcrypt.hashSync('admin28', 10),
+        role: 'ADMIN',
+        kycStatus: 'VERIFIED',
+        accountStatus: 'ACTIVE',
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
+    ];
+  }
 };
 
-// Run initial seed immediately
+// Seed immediately on startup
 seedInitialData();
+
+/**
+ * Initialize and synchronize in-memory collections with Cloud Firestore
+ */
+const initDatabase = async () => {
+  if (!isFirestoreReady()) {
+    console.log(`ℹ️ [Database Engine]: Operating with in-memory store. Cloud Firestore (project "${PROJECT_ID}") will sync once serviceAccountKey.json is placed in backend/config/`);
+    return true;
+  }
+
+  try {
+    const db = getDb();
+    console.log(`🔄 [Database Engine]: Connecting & synchronizing with Cloud Firestore (Project: "${PROJECT_ID}")...`);
+
+    const collectionNames = Object.keys(collections);
+    let totalLoaded = 0;
+
+    for (const colName of collectionNames) {
+      const snap = await db.collection(colName).get();
+      if (!snap.empty) {
+        collections[colName] = [];
+        snap.forEach((docSnap) => {
+          const doc = parseFromFirestore(docSnap);
+          if (doc) {
+            collections[colName].push(doc);
+            totalLoaded++;
+          }
+        });
+        console.log(`   📦 [Firestore] Collection "${colName}": ${snap.size} records`);
+      }
+    }
+
+    console.log(`✅ [Database Engine]: Loaded ${totalLoaded} record(s) from Cloud Firestore.`);
+
+    // If users collection in Firestore is empty, seed the official super admin
+    if (collections.users.length === 0) {
+      const adminId = '6adc5b6d2ce035b95820c160';
+      const adminUser = {
+        _id: adminId,
+        name: 'TENLEA Super Admin',
+        email: 'admin@tenlea',
+        phone: '+91 98765 00001',
+        password: bcrypt.hashSync('admin28', 10),
+        role: 'ADMIN',
+        kycStatus: 'VERIFIED',
+        accountStatus: 'ACTIVE',
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+      collections.users.push(adminUser);
+      await db.collection('users').doc(adminId).set(sanitizeForFirestore(adminUser));
+      console.log(`👑 [Database Engine]: Seeded TENLEA Super Admin account in Cloud Firestore.`);
+    }
+
+    return true;
+  } catch (err) {
+    console.error(`[Database Engine Sync Error]:`, err.message);
+    return false;
+  }
+};
 
 module.exports = {
   collections,
   createModel,
   generateId,
   seedInitialData,
+  initDatabase,
 };
-

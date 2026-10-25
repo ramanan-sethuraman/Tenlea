@@ -10,6 +10,9 @@ server/node_modules/
 .env.local
 .env.*.local
 *.pem
+*serviceAccount*.json
+*firebase-adminsdk*.json
+serviceAccountKey.json
 
 # Build & Output
 dist/

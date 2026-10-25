@@ -255,3 +255,50 @@ exports.getMe = async (req, res, next) => {
     return res.status(500).json({ success: false, message: 'Failed to fetch user session' });
   }
 };
+
+// @desc    Social Login / Register (Google / LinkedIn)
+// @route   POST /api/v1/auth/social
+// @access  Public
+exports.socialAuth = async (req, res, next) => {
+  try {
+    const { provider, role, email, name } = req.body;
+    const providerName = provider || 'google';
+    const userRole = (role || 'VEHICLE_OWNER').toUpperCase();
+    const cleanEmail = (email || `${providerName}_user_${Date.now()}@tenlea.com`).toLowerCase().trim();
+    const displayName = name || `${providerName.charAt(0).toUpperCase() + providerName.slice(1)} User`;
+
+    let user = await User.findOne({ email: cleanEmail });
+    if (!user) {
+      user = await User.create({
+        name: displayName,
+        email: cleanEmail,
+        phone: '+91 99999 00000',
+        password: `SocialAuth@${Date.now().toString().slice(-4)}`,
+        role: userRole,
+        kycStatus: 'PENDING',
+        accountStatus: 'ACTIVE',
+      });
+      console.log(`[Social Auth]: Saved new user to Cloud Firestore: ${cleanEmail}`);
+    }
+
+    const token = generateToken(user._id);
+    return res.status(200).json({
+      success: true,
+      message: 'Authenticated successfully',
+      token,
+      data: {
+        _id: user._id,
+        name: user.name,
+        email: user.email,
+        phone: user.phone,
+        role: user.role,
+        kycStatus: user.kycStatus,
+      },
+    });
+  } catch (error) {
+    console.error('[Social Auth Error]:', error.message);
+    return res.status(400).json({ success: false, message: error.message });
+  }
+};
+
+

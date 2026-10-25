@@ -61,45 +61,12 @@ export const AuthProvider = ({ children }) => {
         return userData;
       }
     } catch (err) {
-      console.warn('Backend login API error:', err.message);
-
-      const cleanEmail = (email || '').toLowerCase().trim();
-      const isAdminLogin = (cleanEmail === 'admin@tenlea' || cleanEmail === 'admin@tenlea.com') && password === 'admin28';
-
-      const isNetworkOrServerIssue =
-        !err.response && (
-          !err.message ||
-          err.message.includes('Network Error') ||
-          err.message.includes('timeout') ||
-          err.message.includes('Database connection') ||
-          err.message.includes('Failed to fetch') ||
-          err.message.includes('503')
-        );
-
-      if (!isAdminLogin && !isNetworkOrServerIssue) {
-        throw err;
-      }
-
-      // Admin fallback if backend API is temporarily unreachable
-      const isAdmin = isAdminLogin || (requestedRole || '').toLowerCase() === 'admin' || cleanEmail.includes('admin');
-      const isLandowner = !isAdmin && (roleLower === 'landowner' || cleanEmail.includes('landowner') || cleanEmail.includes('land'));
-      const calculatedRole = isAdmin ? 'ADMIN' : (isLandowner ? 'LANDOWNER' : 'VEHICLE_OWNER');
-
-      const mockUser = {
-        id: `usr_${Date.now()}`,
-        _id: `usr_${Date.now()}`,
-        name: isAdmin ? 'TENLEA Super Admin' : (nameFromEmail.charAt(0).toUpperCase() + nameFromEmail.slice(1)),
-        fullName: isAdmin ? 'TENLEA Super Admin' : (nameFromEmail.charAt(0).toUpperCase() + nameFromEmail.slice(1)),
-        username: isAdmin ? 'admin' : nameFromEmail.toLowerCase().replace(/[^a-z0-9_]/g, ''),
-        email: cleanEmail,
-        role: calculatedRole,
-        verified: true,
-        kycStatus: 'VERIFIED',
-      };
-      localStorage.setItem('tenlea_token', `token_${Date.now()}`);
-      localStorage.setItem('tenlea_user', JSON.stringify(mockUser));
-      setUser(mockUser);
-      return mockUser;
+      console.error('Backend login error:', err);
+      const errorMsg =
+        err.response?.data?.message ||
+        err.message ||
+        'Cannot connect to Tenlea backend server. Please make sure the backend is running.';
+      throw new Error(errorMsg);
     }
   };
 
@@ -117,46 +84,34 @@ export const AuthProvider = ({ children }) => {
         return userData;
       }
     } catch (err) {
-      console.warn('Backend registration API error:', err.message);
-      if (err.response || (err.message && !err.message.includes('Network Error') && !err.message.includes('timeout'))) {
-        throw err;
-      }
-      // Demo session fallback for offline local testing
-      const roleUpper = (formData.role || 'VEHICLE_OWNER').toUpperCase();
-      const rawName = formData.name || 'User';
-      const mockUser = {
-        id: `usr_${Date.now()}`,
-        name: rawName,
-        fullName: rawName,
-        username: (formData.username || rawName).toLowerCase().replace(/[^a-z0-9_]/g, ''),
-        email: formData.email,
-        phone: formData.phone || '',
-        role: roleUpper,
-        verified: true,
-      };
-      localStorage.setItem('tenlea_token', `token_${Date.now()}`);
-      localStorage.setItem('tenlea_user', JSON.stringify(mockUser));
-      setUser(mockUser);
-      return mockUser;
+      console.error('Backend registration error:', err);
+      const errorMsg =
+        err.response?.data?.message ||
+        err.message ||
+        'Cannot connect to Tenlea backend server. Please make sure the backend is running.';
+      throw new Error(errorMsg);
     }
   };
 
   const socialLogin = async (provider, requestedRole = 'VEHICLE_OWNER') => {
-    const rawRole = (requestedRole || 'VEHICLE_OWNER').toUpperCase();
-    const roleUpper = rawRole === 'VEHICLE' ? 'VEHICLE_OWNER' : rawRole;
-    const mockUser = {
-      id: `usr_${provider}_${Date.now()}`,
-      name: `${provider.charAt(0).toUpperCase() + provider.slice(1)} User`,
-      username: `${provider.toLowerCase()}_user`,
-      email: `user_${Date.now()}@${provider}.com`,
-      role: roleUpper,
-      provider: provider,
-      verified: true,
-    };
-    localStorage.setItem('tenlea_token', `token_${provider}_${Date.now()}`);
-    localStorage.setItem('tenlea_user', JSON.stringify(mockUser));
-    setUser(mockUser);
-    return mockUser;
+    try {
+      const rawRole = (requestedRole || 'VEHICLE_OWNER').toUpperCase();
+      const roleUpper = rawRole === 'VEHICLE' ? 'VEHICLE_OWNER' : rawRole;
+      const res = await api.post('/auth/social', { provider, role: roleUpper });
+      if (res && res.success) {
+        localStorage.setItem('tenlea_token', res.token);
+        const userData = {
+          ...res.data,
+          username: res.data.username || (res.data.name || 'user').toLowerCase().replace(/\s+/g, '')
+        };
+        localStorage.setItem('tenlea_user', JSON.stringify(userData));
+        setUser(userData);
+        return userData;
+      }
+    } catch (err) {
+      console.error('Social auth error:', err);
+      throw new Error(err.response?.data?.message || err.message || 'Social sign-in failed');
+    }
   };
 
   const switchRole = (newRole) => {

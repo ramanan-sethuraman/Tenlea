@@ -11,6 +11,8 @@ dotenv.config({ path: path.join(__dirname, '.env') });
 
 // Connect Database
 const connectDB = require('./config/db');
+connectDB();
+
 const app = express();
 
 
@@ -61,9 +63,14 @@ const mountRoutes = (prefix) => {
   app.use(`${prefix}/agreements`, agreementRoutes);
   app.use(`${prefix}/admin`, adminRoutes);
   app.get(`${prefix}/health`, (req, res) => {
+    const { isFirestoreReady, PROJECT_ID } = require('./config/firebase');
+    const isReady = isFirestoreReady();
     res.status(200).json({
       success: true,
       message: 'TENLEA Service Operating Normally',
+      database: isReady ? 'Cloud Firestore (Connected & Synced)' : 'In-Memory Store (Awaiting Service Account Key)',
+      firestoreProject: PROJECT_ID,
+      firestoreConnected: isReady,
       systemTime: new Date().toISOString(),
       version: '1.0.0',
       environment: process.env.NODE_ENV || 'development'
