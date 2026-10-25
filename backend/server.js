@@ -62,18 +62,38 @@ const mountRoutes = (prefix) => {
   app.use(`${prefix}/payments`, paymentRoutes);
   app.use(`${prefix}/agreements`, agreementRoutes);
   app.use(`${prefix}/admin`, adminRoutes);
-  app.get(`${prefix}/health`, (req, res) => {
-    const { isFirestoreReady, PROJECT_ID } = require('./config/firebase');
+  app.get(`${prefix}/health`, async (req, res) => {
+    const { isFirestoreReady, PROJECT_ID, DATABASE_ID, getLastError, getCredentialSource, getDb } = require('./config/firebase');
     const isReady = isFirestoreReady();
+    let stats = null;
+    if (isReady) {
+      try {
+        const db = getDb();
+        const usersSnap = await db.collection('users').get();
+        const landsSnap = await db.collection('lands').get();
+        const parkingSnap = await db.collection('parkingspaces').get();
+        stats = {
+          usersCount: usersSnap.size,
+          landsCount: landsSnap.size,
+          parkingSpacesCount: parkingSnap.size,
+        };
+      } catch (e) {
+        stats = { queryError: e.message };
+      }
+    }
     res.status(200).json({
       success: true,
       message: 'TENLEA Service Operating Normally',
       database: isReady ? 'Cloud Firestore (Connected & Synced)' : 'In-Memory Store (Awaiting Service Account Key)',
-      firestoreProject: PROJECT_ID,
       firestoreConnected: isReady,
+      firestoreProject: PROJECT_ID,
+      firestoreDatabase: DATABASE_ID,
+      credentialSource: getCredentialSource(),
+      initError: getLastError(),
+      stats,
       systemTime: new Date().toISOString(),
       version: '1.0.0',
-      environment: process.env.NODE_ENV || 'development'
+      environment: process.env.NODE_ENV || 'production'
     });
   });
 };
@@ -81,6 +101,8 @@ const mountRoutes = (prefix) => {
 mountRoutes('/api/v1');
 mountRoutes('/v1');
 mountRoutes('/api');
+mountRoutes('');
+
 
 // Fallback to client index.html for SPA routes or JSON info
 app.get('*', (req, res) => {

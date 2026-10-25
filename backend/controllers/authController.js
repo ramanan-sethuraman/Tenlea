@@ -301,4 +301,40 @@ exports.socialAuth = async (req, res, next) => {
   }
 };
 
+// @desc    Update user profile details
+// @route   PUT /api/v1/auth/profile
+// @access  Private
+exports.updateProfile = async (req, res, next) => {
+  try {
+    const { name, fullName, username, phone } = req.body;
+    const updateData = {};
+    if (name || fullName) updateData.name = (name || fullName).trim();
+    if (username) updateData.username = username.trim();
+    if (phone) updateData.phone = phone.trim();
+
+    const updatedUser = await User.findByIdAndUpdate(req.user._id, updateData, { new: true });
+    if (!updatedUser) {
+      return res.status(404).json({ success: false, message: 'User not found' });
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: 'Profile updated successfully',
+      data: {
+        _id: updatedUser._id,
+        name: updatedUser.name,
+        email: updatedUser.email,
+        phone: updatedUser.phone,
+        role: updatedUser.role,
+        kycStatus: updatedUser.kycStatus,
+        username: updatedUser.username || (updatedUser.name || 'user').toLowerCase().replace(/\s+/g, ''),
+      },
+    });
+  } catch (error) {
+    console.error('[Update Profile Error]:', error.message);
+    return res.status(400).json({ success: false, message: error.message });
+  }
+};
+
+
 

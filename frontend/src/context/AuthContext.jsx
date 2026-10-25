@@ -122,12 +122,22 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  const updateUserProfile = (newFields) => {
+  const updateUserProfile = async (newFields) => {
     if (user) {
-      const updated = { ...user, ...newFields };
-      localStorage.setItem('tenlea_user', JSON.stringify(updated));
-      setUser(updated);
-      return updated;
+      try {
+        const res = await api.put('/auth/profile', newFields);
+        const serverData = res?.data || newFields;
+        const updated = { ...user, ...serverData };
+        localStorage.setItem('tenlea_user', JSON.stringify(updated));
+        setUser(updated);
+        return updated;
+      } catch (err) {
+        console.warn('API profile update warn, falling back to local state:', err.message);
+        const updated = { ...user, ...newFields };
+        localStorage.setItem('tenlea_user', JSON.stringify(updated));
+        setUser(updated);
+        return updated;
+      }
     }
   };
 

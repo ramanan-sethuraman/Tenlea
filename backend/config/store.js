@@ -8,7 +8,7 @@ const {
   PROJECT_ID,
 } = require('./firebase');
 
-// Data Collections (in-memory cache synced with Cloud Firestore)
+// In-memory cache for fast local lookup & fallback
 const collections = {
   users: [],
   lands: [],
@@ -23,7 +23,7 @@ const collections = {
   reviews: [],
 };
 
-// Generate standard 24-character hexadecimal IDs
+// Generate standard 24-character hexadecimal IDs (Mongoose compatible)
 const generateId = () => {
   return crypto.randomBytes(12).toString('hex');
 };
@@ -44,7 +44,7 @@ const getCollectionForRef = (refField) => {
   return map[refField] || null;
 };
 
-// Evaluate query filters
+// Evaluate query filters (supporting standard MongoDB operators like $or, $and, $in, $gte, $lte, $regex)
 const matchQuery = (item, query) => {
   if (!query || Object.keys(query).length === 0) return true;
 
@@ -61,6 +61,11 @@ const matchQuery = (item, query) => {
     const itemVal = item[key];
 
     if (val && typeof val === 'object' && !(val instanceof Date)) {
+      if (val.$regex !== undefined) {
+        const regex = new RegExp(val.$regex, val.$options || '');
+        if (!regex.test(String(itemVal || ''))) return false;
+        continue;
+      }
       if (val.$in && Array.isArray(val.$in)) {
         const strIn = val.$in.map((v) => v?.toString());
         if (!strIn.includes(itemVal?.toString())) return false;
@@ -77,11 +82,11 @@ const matchQuery = (item, query) => {
         val.$lt !== undefined ||
         val.$gt !== undefined
       ) {
-        const compVal = itemVal instanceof Date ? itemVal.getTime() : itemVal;
-        if (val.$lte !== undefined && compVal > (val.$lte instanceof Date ? val.$lte.getTime() : val.$lte)) return false;
-        if (val.$gte !== undefined && compVal < (val.$gte instanceof Date ? val.$gte.getTime() : val.$gte)) return false;
-        if (val.$lt !== undefined && compVal >= (val.$lt instanceof Date ? val.$lt.getTime() : val.$lt)) return false;
-        if (val.$gt !== undefined && compVal <= (val.$gt instanceof Date ? val.$gt.getTime() : val.$gt)) return false;
+        const compVal = itemVal instanceof Date ? itemVal.getTime() : Number(itemVal);
+        if (val.$lte !== undefined && compVal > (val.$lte instanceof Date ? val.$lte.getTime() : Number(val.$lte))) return false;
+        if (val.$gte !== undefined && compVal < (val.$gte instanceof Date ? val.$gte.getTime() : Number(val.$gte))) return false;
+        if (val.$lt !== undefined && compVal >= (val.$lt instanceof Date ? val.$lt.getTime() : Number(val.$lt))) return false;
+        if (val.$gt !== undefined && compVal <= (val.$gt instanceof Date ? val.$gt.getTime() : Number(val.$gt))) return false;
         continue;
       }
     }
@@ -101,24 +106,31 @@ const wrapDoc = (collectionName, data, customMethods = {}) => {
 
   doc.save = async function () {
     doc.updatedAt = new Date();
-    const index = collections[collectionName].findIndex((x) => x._id?.toString() === doc._id?.toString());
-    if (index !== -1) {
-      collections[collectionName][index] = { ...doc };
-    } else {
-      collections[collectionName].push({ ...doc });
-    }
+    const strId = doc._id ? doc._id.toString() : generateId();
+    doc._id = strId;
 
     // Persist to Cloud Firestore if connected
     if (isFirestoreReady()) {
       const db = getDb();
-      if (db && doc._id) {
+      if (db) {
         try {
           await db.collection(collectionName)
-            .doc(doc._id.toString())
+            .doc(strId)
             .set(sanitizeForFirestore(doc), { merge: true });
         } catch (err) {
-          console.error(`[Firestore Save Error in ${collectionName}/${doc._id}]:`, err.message);
+          console.error(`[Firestore Save Error in ${collectionName}/${strId}]:`, err.message);
+          throw err;
         }
+      }
+    }
+
+    // Update in-memory cache
+    if (collections[collectionName]) {
+      const index = collections[collectionName].findIndex((x) => x._id?.toString() === strId);
+      if (index !== -1) {
+        collections[collectionName][index] = { ...doc };
+      } else {
+        collections[collectionName].push({ ...doc });
       }
     }
 
@@ -132,11 +144,73 @@ const wrapDoc = (collectionName, data, customMethods = {}) => {
   return doc;
 };
 
+// Helper: Fetch a single document by ID from Firestore or cache
+async function getDocById(collectionName, id) {
+  if (!id) return null;
+  const strId = id?._id ? id._id.toString() : id.toString();
+
+  if (isFirestoreReady()) {
+    const db = getDb();
+    if (db) {
+      try {
+        const snap = await db.collection(collectionName).doc(strId).get();
+        if (snap.exists) {
+          return parseFromFirestore(snap);
+        }
+        return null;
+      } catch (err) {
+        console.warn(`[Firestore getDocById Warn]: ${err.message}`);
+      }
+    }
+  }
+
+  return collections[collectionName]?.find((x) => x._id?.toString() === strId) || null;
+}
+
+// Helper: Query documents from Cloud Firestore or fallback to cache
+async function queryDocs(collectionName, query = {}) {
+  if (isFirestoreReady()) {
+    const db = getDb();
+    if (db) {
+      try {
+        // Direct ID lookup optimization
+        if (query._id) {
+          const strId = query._id?._id ? query._id._id.toString() : query._id.toString();
+          const snap = await db.collection(collectionName).doc(strId).get();
+          if (snap.exists) {
+            const doc = parseFromFirestore(snap);
+            return matchQuery(doc, query) ? [doc] : [];
+          }
+          return [];
+        }
+
+        // Fetch collection from Cloud Firestore
+        const snap = await db.collection(collectionName).get();
+        const results = [];
+        snap.forEach((docSnap) => {
+          const item = parseFromFirestore(docSnap);
+          if (item && matchQuery(item, query)) {
+            results.push(item);
+          }
+        });
+
+        // Update in-memory collection cache
+        collections[collectionName] = results.map((d) => ({ ...d }));
+        return results;
+      } catch (err) {
+        console.error(`[Firestore queryDocs Error in ${collectionName}]:`, err.message);
+      }
+    }
+  }
+
+  return (collections[collectionName] || []).filter((item) => matchQuery(item, query));
+}
+
 // Query Builder with chainable methods
 class Query {
-  constructor(collectionName, items, isSingle = false, customMethods = {}) {
+  constructor(collectionName, queryObj = {}, isSingle = false, customMethods = {}) {
     this.collectionName = collectionName;
-    this.items = items;
+    this.queryObj = queryObj;
     this.isSingle = isSingle;
     this.customMethods = customMethods;
     this._selectFields = null;
@@ -172,8 +246,18 @@ class Query {
   }
 
   async exec() {
-    let result = this.items.map((item) => ({ ...item }));
+    let rawItems = [];
 
+    if (this.isSingle && this.queryObj._id) {
+      const singleDoc = await getDocById(this.collectionName, this.queryObj._id);
+      rawItems = singleDoc && matchQuery(singleDoc, this.queryObj) ? [singleDoc] : [];
+    } else {
+      rawItems = await queryDocs(this.collectionName, this.queryObj);
+    }
+
+    let result = rawItems.map((item) => ({ ...item }));
+
+    // Apply sorting
     if (this._sortObj) {
       const keys = Object.keys(this._sortObj);
       result.sort((a, b) => {
@@ -186,6 +270,7 @@ class Query {
       });
     }
 
+    // Apply skip & limit
     if (this._skip) {
       result = result.slice(this._skip);
     }
@@ -193,7 +278,7 @@ class Query {
       result = result.slice(0, this._limit);
     }
 
-    // Populate references
+    // Populate references directly
     for (const pop of this._populates) {
       const pathList =
         typeof pop.paths === 'string'
@@ -209,10 +294,10 @@ class Query {
             const targetColl = getCollectionForRef(p);
             if (targetColl) {
               const strRefId = (refId._id || refId).toString();
-              const found = collections[targetColl]?.find((x) => x._id?.toString() === strRefId);
+              const found = await getDocById(targetColl, strRefId);
               if (found) {
                 if (pop.select) {
-                  const allowed = pop.select.split(/\s+/);
+                  const allowed = pop.select.split(/\s+/).filter(Boolean);
                   const filtered = { _id: found._id };
                   allowed.forEach((f) => {
                     if (found[f] !== undefined) filtered[f] = found[f];
@@ -225,6 +310,20 @@ class Query {
             }
           }
         }
+      }
+    }
+
+    // Apply field projection
+    if (this._selectFields) {
+      const fieldList = this._selectFields.split(/\s+/).filter(Boolean);
+      const isExclude = fieldList.some((f) => f.startsWith('-'));
+      if (isExclude) {
+        const excludeKeys = fieldList.filter((f) => f.startsWith('-')).map((f) => f.slice(1));
+        result = result.map((doc) => {
+          const copy = { ...doc };
+          excludeKeys.forEach((k) => delete copy[k]);
+          return copy;
+        });
       }
     }
 
@@ -253,75 +352,86 @@ const createModel = (modelName, defaultSchema = {}, customMethods = {}) => {
 
   return {
     find(query = {}) {
-      const matched = collections[collectionName].filter((item) => matchQuery(item, query));
-      return new Query(collectionName, matched, false, customMethods);
+      return new Query(collectionName, query, false, customMethods);
     },
 
     findOne(query = {}) {
-      const matched = collections[collectionName].filter((item) => matchQuery(item, query));
-      return new Query(collectionName, matched, true, customMethods);
+      return new Query(collectionName, query, true, customMethods);
     },
 
     findById(id) {
-      const strId = id?.toString();
-      const matched = collections[collectionName].filter((item) => item._id?.toString() === strId);
-      return new Query(collectionName, matched, true, customMethods);
+      const strId = id?._id ? id._id.toString() : id?.toString();
+      return new Query(collectionName, { _id: strId }, true, customMethods);
     },
 
     async findByIdAndUpdate(id, update = {}, options = {}) {
-      const strId = id?.toString();
-      const index = collections[collectionName].findIndex((item) => item._id?.toString() === strId);
-      if (index === -1) return null;
+      const strId = id?._id ? id._id.toString() : id?.toString();
+      if (!strId) return null;
 
-      const oldDoc = collections[collectionName][index];
+      const existingDoc = await getDocById(collectionName, strId);
+      const oldDoc = existingDoc || { _id: strId, ...defaultSchema };
+
       const fieldsToUpdate = update.$set ? { ...update.$set } : { ...update };
       delete fieldsToUpdate.$set;
 
       const updatedDoc = {
         ...oldDoc,
         ...fieldsToUpdate,
+        _id: strId,
         updatedAt: new Date(),
       };
-      collections[collectionName][index] = updatedDoc;
 
-      // Sync to Cloud Firestore
+      // Persist to Cloud Firestore
       if (isFirestoreReady()) {
         const db = getDb();
-        if (db && strId) {
+        if (db) {
           try {
             await db.collection(collectionName)
               .doc(strId)
               .set(sanitizeForFirestore(updatedDoc), { merge: true });
           } catch (err) {
             console.error(`[Firestore Update Error in ${collectionName}/${strId}]:`, err.message);
+            throw err;
           }
         }
+      }
+
+      // Update in-memory cache
+      const index = collections[collectionName].findIndex((item) => item._id?.toString() === strId);
+      if (index !== -1) {
+        collections[collectionName][index] = updatedDoc;
+      } else {
+        collections[collectionName].push(updatedDoc);
       }
 
       return wrapDoc(collectionName, options.new !== false ? updatedDoc : oldDoc, customMethods);
     },
 
     async findByIdAndDelete(id) {
-      const strId = id?.toString();
-      const index = collections[collectionName].findIndex((item) => item._id?.toString() === strId);
-      if (index === -1) return null;
-      const removed = collections[collectionName].splice(index, 1)[0];
+      const strId = id?._id ? id._id.toString() : id?.toString();
+      if (!strId) return null;
 
-      // Sync to Cloud Firestore
+      const existingDoc = await getDocById(collectionName, strId);
+
+      // Delete from Cloud Firestore
       if (isFirestoreReady()) {
         const db = getDb();
-        if (db && strId) {
+        if (db) {
           try {
-            await db.collection(collectionName)
-              .doc(strId)
-              .delete();
+            await db.collection(collectionName).doc(strId).delete();
           } catch (err) {
             console.error(`[Firestore Delete Error in ${collectionName}/${strId}]:`, err.message);
           }
         }
       }
 
-      return wrapDoc(collectionName, removed, customMethods);
+      // Remove from cache
+      const index = collections[collectionName].findIndex((item) => item._id?.toString() === strId);
+      if (index !== -1) {
+        collections[collectionName].splice(index, 1);
+      }
+
+      return existingDoc ? wrapDoc(collectionName, existingDoc, customMethods) : null;
     },
 
     async create(docOrArray) {
@@ -344,9 +454,7 @@ const createModel = (modelName, defaultSchema = {}, customMethods = {}) => {
           updatedAt: item.updatedAt || new Date(),
         };
 
-        collections[collectionName].push(doc);
-
-        // Sync to Cloud Firestore
+        // Persist directly to Cloud Firestore
         if (isFirestoreReady()) {
           const db = getDb();
           if (db) {
@@ -354,10 +462,20 @@ const createModel = (modelName, defaultSchema = {}, customMethods = {}) => {
               await db.collection(collectionName)
                 .doc(doc._id.toString())
                 .set(sanitizeForFirestore(doc));
+              console.log(`🔥 [Firestore Saved]: Collection "${collectionName}" -> Document "${doc._id}"`);
             } catch (err) {
               console.error(`[Firestore Create Error in ${collectionName}/${doc._id}]:`, err.message);
+              throw err;
             }
           }
+        }
+
+        // Cache in memory
+        const idx = collections[collectionName].findIndex((x) => x._id?.toString() === doc._id.toString());
+        if (idx !== -1) {
+          collections[collectionName][idx] = doc;
+        } else {
+          collections[collectionName].push(doc);
         }
 
         created.push(wrapDoc(collectionName, doc, customMethods));
@@ -367,50 +485,29 @@ const createModel = (modelName, defaultSchema = {}, customMethods = {}) => {
     },
 
     async countDocuments(query = {}) {
-      return collections[collectionName].filter((item) => matchQuery(item, query)).length;
+      const docs = await queryDocs(collectionName, query);
+      return docs.length;
     },
 
     async deleteMany(query = {}) {
-      if (!query || Object.keys(query).length === 0) {
-        const count = collections[collectionName].length;
-        const allIds = collections[collectionName].map((d) => d._id?.toString()).filter(Boolean);
-        collections[collectionName] = [];
-
-        if (isFirestoreReady()) {
-          const db = getDb();
-          if (db && allIds.length > 0) {
-            const batch = db.batch();
-            allIds.forEach((id) => batch.delete(db.collection(collectionName).doc(id)));
-            batch.commit().catch((err) => console.error(`[Firestore Batch Delete Error]:`, err.message));
-          }
-        }
-
-        return { deletedCount: count };
-      }
-
-      const toDelete = collections[collectionName].filter((item) => matchQuery(item, query));
-      const keep = collections[collectionName].filter((item) => !matchQuery(item, query));
-      const deletedCount = toDelete.length;
-      collections[collectionName] = keep;
+      const docs = await queryDocs(collectionName, query);
+      const allIds = docs.map((d) => d._id?.toString()).filter(Boolean);
 
       if (isFirestoreReady()) {
         const db = getDb();
-        if (db && toDelete.length > 0) {
+        if (db && allIds.length > 0) {
           const batch = db.batch();
-          toDelete.forEach((doc) => {
-            if (doc._id) {
-              batch.delete(db.collection(collectionName).doc(doc._id.toString()));
-            }
-          });
-          batch.commit().catch((err) => console.error(`[Firestore Batch Delete Error]:`, err.message));
+          allIds.forEach((id) => batch.delete(db.collection(collectionName).doc(id)));
+          await batch.commit().catch((err) => console.error(`[Firestore Batch Delete Error]:`, err.message));
         }
       }
 
-      return { deletedCount };
+      collections[collectionName] = collections[collectionName].filter((item) => !matchQuery(item, query));
+      return { deletedCount: allIds.length };
     },
 
     async aggregate(pipeline = []) {
-      let data = [...collections[collectionName]];
+      let data = await queryDocs(collectionName, {});
 
       for (const stage of pipeline) {
         if (stage.$match) {
@@ -440,29 +537,26 @@ const createModel = (modelName, defaultSchema = {}, customMethods = {}) => {
   };
 };
 
-// Pre-seed Demo Dataset Immediately on Load for local fallback
+// Seed admin fallback into memory
 const seedInitialData = () => {
   const adminId = '6adc5b6d2ce035b95820c160';
 
   if (!collections.users.some((u) => u._id === adminId)) {
-    collections.users = [
-      {
-        _id: adminId,
-        name: 'TENLEA Super Admin',
-        email: 'admin@tenlea',
-        phone: '+91 98765 00001',
-        password: bcrypt.hashSync('admin28', 10),
-        role: 'ADMIN',
-        kycStatus: 'VERIFIED',
-        accountStatus: 'ACTIVE',
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      },
-    ];
+    collections.users.push({
+      _id: adminId,
+      name: 'TENLEA Super Admin',
+      email: 'admin@tenlea',
+      phone: '+91 98765 00001',
+      password: bcrypt.hashSync('admin28', 10),
+      role: 'ADMIN',
+      kycStatus: 'VERIFIED',
+      accountStatus: 'ACTIVE',
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
   }
 };
 
-// Seed immediately on startup
 seedInitialData();
 
 /**
@@ -470,13 +564,13 @@ seedInitialData();
  */
 const initDatabase = async () => {
   if (!isFirestoreReady()) {
-    console.log(`ℹ️ [Database Engine]: Operating with in-memory store. Cloud Firestore (project "${PROJECT_ID}") will sync once serviceAccountKey.json is placed in backend/config/`);
+    console.log(`ℹ️ [Database Engine]: Operating with in-memory store. Cloud Firestore (project "${PROJECT_ID}") will sync once credentials are provided.`);
     return true;
   }
 
   try {
     const db = getDb();
-    console.log(`🔄 [Database Engine]: Connecting & synchronizing with Cloud Firestore (Project: "${PROJECT_ID}")...`);
+    console.log(`🔄 [Database Engine]: Synchronizing with Cloud Firestore (Project: "${PROJECT_ID}")...`);
 
     const collectionNames = Object.keys(collections);
     let totalLoaded = 0;
