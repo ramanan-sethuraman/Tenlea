@@ -11,8 +11,7 @@
     "frontend": "npm --prefix frontend run dev",
     "client": "npm --prefix frontend run dev",
     "backend": "npm --prefix backend run dev",
-    "server": "npm --prefix backend run dev",
-    "seed:firestore": "npm --prefix backend run seed:firestore"
+    "server": "npm --prefix backend run dev"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",
@@ -20,7 +19,6 @@
     "dotenv": "^16.6.1",
     "express": "^4.19.2",
     "express-rate-limit": "^7.3.1",
-    "firebase-admin": "^14.5.0",
     "helmet": "^7.1.0",
     "jsonwebtoken": "^9.0.2",
     "morgan": "^1.10.0",

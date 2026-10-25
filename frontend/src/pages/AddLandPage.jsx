@@ -2,11 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Navbar } from '../components/layout/Navbar';
 import { Footer } from '../components/layout/Footer';
-import { MapPin, ImagePlus, ArrowRight, ShieldCheck, Loader2, CheckCircle2, AlertTriangle } from 'lucide-react';
-import api from '../services/api';
-import { db } from '../firebase/config';
-import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
-import { useAuth } from '../context/AuthContext';
+import { MapPin, ImagePlus, ArrowRight, ShieldCheck } from 'lucide-react';
 
 export const AddLandPage = () => {
   const [title, setTitle] = useState('');
@@ -18,53 +14,11 @@ export const AddLandPage = () => {
   const [totalArea, setTotalArea] = useState('');
   const [availableArea, setAvailableArea] = useState('');
   const [submitted, setSubmitted] = useState(false);
-  const [createdDocId, setCreatedDocId] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [errorMsg, setErrorMsg] = useState('');
-  const { user } = useAuth();
   const navigate = useNavigate();
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = (e) => {
     e.preventDefault();
-    setLoading(true);
-    setErrorMsg('');
-
-    try {
-      const landPayload = {
-        title: title.trim(),
-        description: description.trim(),
-        address: address.trim(),
-        city: city.trim(),
-        state: state.trim(),
-        pinCode: pinCode.trim(),
-        totalArea: totalArea.trim(),
-        availableArea: availableArea.trim(),
-        landownerId: user?._id || user?.id || 'guest_landowner',
-        landownerEmail: user?.email || 'guest@tenlea.com',
-        landownerName: user?.name || 'Landowner Host',
-        verificationStatus: 'PENDING',
-        createdAt: serverTimestamp(),
-      };
-
-      console.log('📝 [Firestore]: Adding document to "lands" collection...', landPayload);
-      const docRef = await addDoc(collection(db, 'lands'), landPayload);
-      console.log('✅ [Firestore Success]: Saved land document with ID:', docRef.id);
-      setCreatedDocId(docRef.id);
-
-      // Also sync to backend API
-      try {
-        await api.post('/lands', { ...landPayload, _id: docRef.id });
-      } catch (apiErr) {
-        console.warn('[Backend Sync Note]:', apiErr.message);
-      }
-
-      setSubmitted(true);
-    } catch (err) {
-      console.error('❌ [Firestore Error]:', err.code, err.message, err);
-      setErrorMsg(`Failed to save to Firestore: [${err.code || 'error'}] ${err.message}`);
-    } finally {
-      setLoading(false);
-    }
+    setSubmitted(true);
   };
 
   return (
@@ -84,42 +38,21 @@ export const AddLandPage = () => {
           </div>
 
           {submitted ? (
-            <div className="p-8 rounded-2xl bg-zinc-950 border border-emerald-500/40 text-center space-y-4">
-              <div className="w-16 h-16 rounded-full bg-emerald-950 text-emerald-400 flex items-center justify-center mx-auto text-2xl font-bold border border-emerald-500/50">
-                <CheckCircle2 className="w-8 h-8 text-emerald-400" />
+            <div className="p-8 rounded-2xl bg-zinc-950 border border-zinc-700 text-center space-y-4">
+              <div className="w-16 h-16 rounded-full bg-zinc-800 text-white flex items-center justify-center mx-auto text-2xl font-bold border border-zinc-700">
+                ✓
               </div>
-              <h3 className="text-xl font-bold text-white">Land Property Saved to Cloud Firestore!</h3>
-              <p className="text-sm text-zinc-300">
-                Your land listing has been written directly to the <span className="font-mono text-emerald-400">"lands"</span> collection in Cloud Firestore.
-              </p>
-              {createdDocId && (
-                <div className="inline-block px-4 py-2 rounded-xl bg-zinc-900 border border-zinc-700 font-mono text-xs text-zinc-300">
-                  Firestore Document ID: <span className="text-emerald-400 font-bold">{createdDocId}</span>
-                </div>
-              )}
-              <div>
-                <button
-                  onClick={() => navigate('/dashboard/landowner')}
-                  className="px-6 py-3 rounded-xl bg-white hover:bg-zinc-200 text-zinc-950 font-bold text-xs transition-all cursor-pointer"
-                >
-                  Return to Dashboard
-                </button>
-              </div>
+              <h3 className="text-xl font-bold text-white">Land Submitted for Verification</h3>
+              <p className="text-sm text-zinc-400">Your land property has been submitted and is currently pending admin review.</p>
+              <button
+                onClick={() => navigate('/dashboard/landowner')}
+                className="px-6 py-3 rounded-xl bg-white hover:bg-zinc-200 text-zinc-950 font-bold text-xs transition-all"
+              >
+                Return to Dashboard
+              </button>
             </div>
           ) : (
             <form onSubmit={handleSubmit} className="space-y-6">
-              {errorMsg && (
-                <div className="p-4 rounded-xl bg-red-950/80 border border-red-500/50 text-red-200 text-xs flex items-center gap-2.5">
-                  <AlertTriangle className="w-5 h-5 text-red-400 shrink-0" />
-                  <span>{errorMsg}</span>
-                </div>
-              )}
-              {!user && (
-                <div className="p-3.5 rounded-xl bg-blue-950/40 border border-blue-500/30 text-blue-200 text-xs flex items-center gap-2">
-                  <ShieldCheck className="w-4 h-4 text-blue-400 shrink-0" />
-                  <span>Notice: You are submitting as a guest. Log in to bind this plot to your verified landowner profile.</span>
-                </div>
-              )}
               <div>
                 <label className="block text-xs font-semibold text-zinc-300 mb-1.5">Land Title</label>
                 <input
@@ -207,20 +140,10 @@ export const AddLandPage = () => {
 
               <button
                 type="submit"
-                disabled={loading}
-                className="w-full py-4 rounded-2xl bg-white hover:bg-zinc-200 text-zinc-950 font-bold text-sm shadow-xl flex items-center justify-center gap-2 transition-all cursor-pointer disabled:opacity-50"
+                className="w-full py-4 rounded-2xl bg-white hover:bg-zinc-200 text-zinc-950 font-bold text-sm shadow-xl flex items-center justify-center gap-2 transition-all"
               >
-                {loading ? (
-                  <>
-                    <Loader2 className="w-4 h-4 animate-spin text-zinc-950" />
-                    <span>Writing to Cloud Firestore...</span>
-                  </>
-                ) : (
-                  <>
-                    <span>Submit Land to Cloud Firestore</span>
-                    <ArrowRight className="w-4 h-4 text-zinc-950" />
-                  </>
-                )}
+                <span>Submit for Verification</span>
+                <ArrowRight className="w-4 h-4 text-zinc-950" />
               </button>
             </form>
           )}

@@ -1,43 +1,15 @@
 import React, { useState } from 'react';
 import { Navbar } from '../components/layout/Navbar';
 import { Footer } from '../components/layout/Footer';
-import { Phone, Mail, MapPin, Send, MessageSquare, CheckCircle2, Linkedin, AlertCircle, Loader2 } from 'lucide-react';
-import { db } from '../firebase/config';
-import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
+import { Phone, Mail, MapPin, Send, MessageSquare, CheckCircle2, Linkedin } from 'lucide-react';
 
 export const ContactPage = () => {
   const [submitted, setSubmitted] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [createdDocId, setCreatedDocId] = useState('');
-  const [errorMsg, setErrorMsg] = useState('');
   const [formData, setFormData] = useState({ name: '', email: '', phone: '', message: '' });
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = (e) => {
     e.preventDefault();
-    setLoading(true);
-    setErrorMsg('');
-
-    const payload = {
-      name: formData.name.trim(),
-      email: formData.email.trim(),
-      phone: formData.phone.trim(),
-      message: formData.message.trim(),
-      type: 'CONTACT_QUERY',
-      createdAt: serverTimestamp(),
-    };
-
-    try {
-      console.log('📝 [Firestore]: Adding document to "notifications" collection...', payload);
-      const docRef = await addDoc(collection(db, 'notifications'), payload);
-      console.log('✅ [Firestore Success]: Saved contact query with ID:', docRef.id);
-      setCreatedDocId(docRef.id);
-      setSubmitted(true);
-    } catch (err) {
-      console.error('❌ [Firestore Error]:', err.code, err.message, err);
-      setErrorMsg(`Failed to submit message: [${err.code || 'unknown'}] ${err.message}`);
-    } finally {
-      setLoading(false);
-    }
+    setSubmitted(true);
   };
 
   return (
@@ -142,25 +114,13 @@ export const ContactPage = () => {
                 <p className="text-xs text-zinc-400 mb-6">Fill in your information and we will respond as soon as possible.</p>
               </div>
 
-              {errorMsg && (
-                <div className="mb-6 p-4 rounded-2xl bg-rose-950/80 border border-rose-500/50 text-rose-300 text-xs flex items-center gap-3 shadow-lg">
-                  <AlertCircle className="w-5 h-5 text-rose-400 shrink-0" />
-                  <div className="flex-1">{errorMsg}</div>
-                </div>
-              )}
-
               {submitted ? (
                 <div className="p-8 rounded-2xl bg-zinc-950 border border-slate-300/30 text-center space-y-3">
                   <CheckCircle2 className="w-12 h-12 text-white mx-auto" />
-                  <h3 className="text-lg font-bold text-white">Message Saved to Firestore!</h3>
+                  <h3 className="text-lg font-bold text-white">Message Received!</h3>
                   <p className="text-xs text-zinc-400 max-w-md mx-auto">
                     Thank you for contacting TENLEA. Our team will reach out to you shortly via phone or email.
                   </p>
-                  {createdDocId && (
-                    <div className="p-3 rounded-xl bg-zinc-900 border border-emerald-500/30 text-xs text-emerald-300 font-mono">
-                      Firestore Document ID: <span className="font-bold text-white">{createdDocId}</span>
-                    </div>
-                  )}
                   <button
                     onClick={() => {
                       setSubmitted(false);
@@ -225,20 +185,10 @@ export const ContactPage = () => {
 
                   <button
                     type="submit"
-                    disabled={loading}
-                    className="w-full py-3.5 rounded-xl btn-silver-primary text-zinc-950 font-bold text-xs flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+                    className="w-full py-3.5 rounded-xl btn-silver-primary text-zinc-950 font-bold text-xs flex items-center justify-center gap-2"
                   >
-                    {loading ? (
-                      <>
-                        <Loader2 className="w-4 h-4 animate-spin text-zinc-950" />
-                        <span>Sending to Firestore...</span>
-                      </>
-                    ) : (
-                      <>
-                        <Send className="w-4 h-4 text-zinc-950" />
-                        <span>Submit Message</span>
-                      </>
-                    )}
+                    <Send className="w-4 h-4 text-zinc-950" />
+                    <span>Submit Message</span>
                   </button>
                 </form>
               )}

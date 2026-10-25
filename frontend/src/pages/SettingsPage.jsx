@@ -87,14 +87,14 @@ export const SettingsPage = () => {
   ];
 
   const handleSave = (tabName) => {
-    setSavedSuccess(`${tabName} updated successfully in Firestore!`);
-    setTimeout(() => setSavedSuccess(''), 4000);
+    setSavedSuccess(`${tabName} updated successfully!`);
+    setTimeout(() => setSavedSuccess(''), 3000);
   };
 
-  const handleSaveAccountDetails = async () => {
+  const handleSaveAccountDetails = () => {
     const cleanUsername = (accountData.username || accountData.name).toLowerCase().replace(/[^a-z0-9_]/g, '');
     if (updateUserProfile) {
-      await updateUserProfile({
+      updateUserProfile({
         name: accountData.name,
         fullName: accountData.name,
         username: cleanUsername,
@@ -102,7 +102,7 @@ export const SettingsPage = () => {
         phone: accountData.phone,
       });
     }
-    handleSave('Account Details & Profile');
+    handleSave('Account Details & Profile Name');
   };
 
   return (
