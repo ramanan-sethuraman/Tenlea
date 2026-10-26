@@ -79,10 +79,31 @@ const mountRoutes = (prefix) => {
   app.use(`${prefix}/payments`, paymentRoutes);
   app.use(`${prefix}/agreements`, agreementRoutes);
   app.use(`${prefix}/admin`, adminRoutes);
-  app.get(`${prefix}/health`, (req, res) => {
+  app.get(`${prefix}/health`, async (req, res) => {
+    const mongoose = require('mongoose');
+    let dbStatus = 'DISCONNECTED';
+    let usersCount = 0;
+    try {
+      if (mongoose.connection.readyState === 1) {
+        dbStatus = 'CONNECTED';
+        usersCount = await (mongoose.models.User ? mongoose.models.User.countDocuments() : 0);
+      } else if (mongoose.connection.readyState === 2) {
+        dbStatus = 'CONNECTING';
+      }
+    } catch (e) {
+      dbStatus = 'ERROR: ' + e.message;
+    }
+
     res.status(200).json({
       success: true,
       message: 'TENLEA Service Operating Normally',
+      mongodb: {
+        status: dbStatus,
+        readyState: mongoose.connection.readyState,
+        hasUri: Boolean(process.env.MONGODB_URI),
+        host: mongoose.connection.host || null,
+        usersInDb: usersCount,
+      },
       systemTime: new Date().toISOString(),
       version: '1.0.0',
       environment: process.env.NODE_ENV || 'development'
