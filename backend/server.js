@@ -51,6 +51,23 @@ const paymentRoutes = require('./routes/paymentRoutes');
 const agreementRoutes = require('./routes/agreementRoutes');
 const adminRoutes = require('./routes/adminRoutes');
 
+// Ensure database is ready before processing API requests
+app.use(async (req, res, next) => {
+  if (req.originalUrl.startsWith('/api') || req.originalUrl.startsWith('/v1')) {
+    try {
+      await connectDB();
+    } catch (err) {
+      console.error('[Database Connection Middleware Error]:', err.message);
+      return res.status(503).json({
+        success: false,
+        message: 'Database connection failed. Please check MongoDB Atlas Network Access (Allow 0.0.0.0/0).',
+        error: err.message,
+      });
+    }
+  }
+  next();
+});
+
 // Mount API Routes across standard prefixes
 const mountRoutes = (prefix) => {
   app.use(`${prefix}/auth`, authRoutes);

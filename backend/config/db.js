@@ -1,37 +1,51 @@
 const mongoose = require('mongoose');
 const dns = require('dns');
 
-// Configure reliable DNS servers to resolve MongoDB Atlas SRV records
-try {
-  dns.setServers(['8.8.8.8', '8.8.4.4', '1.1.1.1']);
-} catch (e) {
-  // Non-fatal if runtime disallows overriding DNS
+// Only override DNS servers on local Windows to resolve ISP SRV issues; never in production / Vercel
+if (process.platform === 'win32' && !process.env.VERCEL) {
+  try {
+    dns.setServers(['8.8.8.8', '8.8.4.4', '1.1.1.1']);
+  } catch (e) {
+    // Non-fatal
+  }
 }
 
-let cachedConnection = null;
+// Global cached connection for Serverless / Vercel environments
+let cached = global.mongoose;
+if (!cached) {
+  cached = global.mongoose = { conn: null, promise: null };
+}
 
 const connectDB = async () => {
-  if (cachedConnection && mongoose.connection.readyState === 1) {
-    return cachedConnection;
+  if (cached.conn && mongoose.connection.readyState === 1) {
+    return cached.conn;
   }
 
   const uri = process.env.MONGODB_URI;
   if (!uri) {
-    console.warn('⚠️ [MongoDB]: MONGODB_URI not found. Running with In-Memory store.');
+    console.warn('⚠️ [MongoDB]: MONGODB_URI not found.');
     return null;
   }
 
-  try {
-    const conn = await mongoose.connect(uri, {
-      serverSelectionTimeoutMS: 8000,
+  if (!cached.promise) {
+    const opts = {
+      serverSelectionTimeoutMS: 5000,
       autoIndex: true,
+    };
+
+    cached.promise = mongoose.connect(uri, opts).then((m) => {
+      console.log(`✅ [MongoDB]: Connected successfully to ${m.connection.host}/${m.connection.name}`);
+      return m;
     });
-    cachedConnection = conn;
-    console.log(`✅ [MongoDB]: Connected successfully to ${conn.connection.host}/${conn.connection.name}`);
-    return conn;
+  }
+
+  try {
+    cached.conn = await cached.promise;
+    return cached.conn;
   } catch (error) {
+    cached.promise = null;
     console.error(`❌ [MongoDB Connection Error]: ${error.message}`);
-    return null;
+    throw error;
   }
 };
 
