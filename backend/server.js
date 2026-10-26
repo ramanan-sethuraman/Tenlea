@@ -8,6 +8,11 @@ const fs = require('fs');
 
 // Load environment variables from backend/.env
 dotenv.config({ path: path.join(__dirname, '.env') });
+
+// Connect to MongoDB Atlas (Persistent Cloud Database)
+const connectDB = require('./config/db');
+connectDB();
+
 const app = express();
 
 

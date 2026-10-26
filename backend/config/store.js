@@ -1,7 +1,31 @@
 const crypto = require('crypto');
 const bcrypt = require('bcryptjs');
+const mongoose = require('mongoose');
 
-// In-Memory Data Collections
+// Generate standard 24-character hexadecimal IDs
+const generateId = () => {
+  return new mongoose.Types.ObjectId().toString();
+};
+
+// Map populate field name to collection / Model
+const refMap = {
+  landownerId: 'User',
+  vehicleOwnerId: 'User',
+  userId: 'User',
+  reviewedBy: 'User',
+  ownerId: 'User',
+  payerId: 'User',
+  receiverId: 'User',
+  raisedBy: 'User',
+  resolvedBy: 'User',
+  targetUserId: 'User',
+  landId: 'Land',
+  parkingSpaceId: 'ParkingSpace',
+  vehicleId: 'Vehicle',
+  bookingId: 'Booking',
+};
+
+// In-Memory Data Collections (Fallback when MongoDB is offline)
 const collections = {
   users: [],
   lands: [],
@@ -16,12 +40,7 @@ const collections = {
   reviews: [],
 };
 
-// Generate standard 24-character hexadecimal IDs
-const generateId = () => {
-  return crypto.randomBytes(12).toString('hex');
-};
-
-// Map populate field name to collection
+// Map populate field name to collection for in-memory fallback
 const getCollectionForRef = (refField) => {
   const map = {
     landownerId: 'users',
@@ -37,7 +56,7 @@ const getCollectionForRef = (refField) => {
   return map[refField] || null;
 };
 
-// Evaluate query filters
+// Evaluate query filters for in-memory fallback
 const matchQuery = (item, query) => {
   if (!query || Object.keys(query).length === 0) return true;
 
@@ -110,8 +129,8 @@ const wrapDoc = (collectionName, data, customMethods = {}) => {
   return doc;
 };
 
-// Query Builder with chainable methods
-class Query {
+// In-Memory Query Builder
+class InMemoryQuery {
   constructor(collectionName, items, isSingle = false, customMethods = {}) {
     this.collectionName = collectionName;
     this.items = items;
@@ -171,7 +190,6 @@ class Query {
       result = result.slice(0, this._limit);
     }
 
-    // Populate references
     for (const pop of this._populates) {
       const pathList =
         typeof pop.paths === 'string'
@@ -222,8 +240,8 @@ class Query {
   }
 }
 
-// Create Model factory
-const createModel = (modelName, defaultSchema = {}, customMethods = {}) => {
+// In-Memory Model Fallback Factory
+const createInMemoryModel = (modelName, defaultSchema = {}, customMethods = {}) => {
   const collectionName = modelName.toLowerCase() + 's';
   if (!collections[collectionName]) {
     collections[collectionName] = [];
@@ -232,18 +250,18 @@ const createModel = (modelName, defaultSchema = {}, customMethods = {}) => {
   return {
     find(query = {}) {
       const matched = collections[collectionName].filter((item) => matchQuery(item, query));
-      return new Query(collectionName, matched, false, customMethods);
+      return new InMemoryQuery(collectionName, matched, false, customMethods);
     },
 
     findOne(query = {}) {
       const matched = collections[collectionName].filter((item) => matchQuery(item, query));
-      return new Query(collectionName, matched, true, customMethods);
+      return new InMemoryQuery(collectionName, matched, true, customMethods);
     },
 
     findById(id) {
       const strId = id?.toString();
       const matched = collections[collectionName].filter((item) => item._id?.toString() === strId);
-      return new Query(collectionName, matched, true, customMethods);
+      return new InMemoryQuery(collectionName, matched, true, customMethods);
     },
 
     async findByIdAndUpdate(id, update = {}, options = {}) {
@@ -346,11 +364,72 @@ const createModel = (modelName, defaultSchema = {}, customMethods = {}) => {
   };
 };
 
-// Pre-seed Demo Dataset Immediately on Load
-const seedInitialData = () => {
-  // Only Official Admin Account
-  const adminId = '6adc5b6d2ce035b95820c160';
+// Build Mongoose Schema dynamically
+function buildMongooseSchema(modelName, defaultSchema = {}, customMethods = {}) {
+  const fields = {
+    _id: { type: String, default: () => new mongoose.Types.ObjectId().toString() },
+  };
 
+  for (const [key, val] of Object.entries(defaultSchema)) {
+    if (refMap[key]) {
+      fields[key] = { type: String, ref: refMap[key], default: null };
+    } else if (Array.isArray(val)) {
+      fields[key] = { type: [mongoose.Schema.Types.Mixed], default: val };
+    } else if (typeof val === 'number') {
+      fields[key] = { type: Number, default: val };
+    } else if (typeof val === 'boolean') {
+      fields[key] = { type: Boolean, default: val };
+    } else if (val instanceof Date) {
+      fields[key] = { type: Date, default: null };
+    } else if (key === 'email') {
+      fields[key] = { type: String, trim: true, lowercase: true, default: '' };
+    } else {
+      fields[key] = { type: String, default: val || '' };
+    }
+  }
+
+  const schema = new mongoose.Schema(fields, {
+    timestamps: true,
+    strict: false,
+    toJSON: { virtuals: true },
+    toObject: { virtuals: true },
+  });
+
+  // Attach custom methods
+  for (const [name, fn] of Object.entries(customMethods)) {
+    schema.methods[name] = fn;
+  }
+
+  // Pre-save hook for User password hashing
+  if (modelName === 'User') {
+    schema.pre('save', async function () {
+      if (this.isModified('password') && this.password && typeof this.password === 'string' && !this.password.startsWith('$2')) {
+        this.password = await bcrypt.hash(this.password, 10);
+      }
+    });
+  }
+
+  return schema;
+}
+
+// Master Create Model - Uses MongoDB / Mongoose when configured, with seamless in-memory fallback
+const createModel = (modelName, defaultSchema = {}, customMethods = {}) => {
+  // If MONGODB_URI is provided, use Mongoose Model
+  if (process.env.MONGODB_URI) {
+    if (mongoose.models[modelName]) {
+      return mongoose.models[modelName];
+    }
+    const schema = buildMongooseSchema(modelName, defaultSchema, customMethods);
+    return mongoose.model(modelName, schema);
+  }
+
+  // Fallback to In-Memory
+  return createInMemoryModel(modelName, defaultSchema, customMethods);
+};
+
+// Pre-seed Demo Admin in Memory fallback
+const seedInitialData = () => {
+  const adminId = '6adc5b6d2ce035b95820c160';
   collections.users = [
     {
       _id: adminId,
@@ -365,20 +444,42 @@ const seedInitialData = () => {
       updatedAt: new Date(),
     },
   ];
-
-  collections.lands = [];
-  collections.parkingspaces = [];
-  collections.vehicles = [];
-  collections.bookings = [];
-  collections.agreements = [];
-  collections.payments = [];
-  collections.kycs = [];
-  collections.disputes = [];
-  collections.notifications = [];
-  collections.reviews = [];
 };
 
-// Run initial seed immediately
+// Auto-seed persistent Super Admin into MongoDB Atlas
+const seedMongoDBAdmin = async () => {
+  try {
+    const User = mongoose.models.User;
+    if (!User) return;
+
+    const existingAdmin = await User.findOne({
+      email: { $in: ['admin@tenlea', 'admin@tenlea.com'] },
+    });
+
+    if (!existingAdmin) {
+      await User.create({
+        _id: '6adc5b6d2ce035b95820c160',
+        name: 'TENLEA Super Admin',
+        email: 'admin@tenlea',
+        phone: '+91 98765 00001',
+        password: 'admin28', // Will be hashed by pre-save hook
+        role: 'ADMIN',
+        kycStatus: 'VERIFIED',
+        accountStatus: 'ACTIVE',
+      });
+      console.log('👑 [Seed]: Super Admin provisioned in MongoDB Atlas (admin@tenlea / admin28)');
+    }
+  } catch (err) {
+    console.warn('⚠️ [Seed Note]:', err.message);
+  }
+};
+
+// Trigger seed when Mongoose connects
+mongoose.connection.on('connected', () => {
+  seedMongoDBAdmin();
+});
+
+// Run initial in-memory seed on module load
 seedInitialData();
 
 module.exports = {
@@ -386,5 +487,5 @@ module.exports = {
   createModel,
   generateId,
   seedInitialData,
+  seedMongoDBAdmin,
 };
-
