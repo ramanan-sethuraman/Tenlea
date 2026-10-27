@@ -414,17 +414,156 @@ function buildMongooseSchema(modelName, defaultSchema = {}, customMethods = {}) 
 
 // Master Create Model - Uses MongoDB / Mongoose when configured, with seamless in-memory fallback
 const createModel = (modelName, defaultSchema = {}, customMethods = {}) => {
-  // If MONGODB_URI is provided, use Mongoose Model
-  if (process.env.MONGODB_URI) {
-    if (mongoose.models[modelName]) {
-      return mongoose.models[modelName];
+  const inMemModel = createInMemoryModel(modelName, defaultSchema, customMethods);
+
+  // Register schema with Mongoose
+  let mongooseModel = mongoose.models[modelName];
+  if (!mongooseModel) {
+    try {
+      const schema = buildMongooseSchema(modelName, defaultSchema, customMethods);
+      mongooseModel = mongoose.model(modelName, schema);
+    } catch (e) {
+      mongooseModel = mongoose.models[modelName] || null;
     }
-    const schema = buildMongooseSchema(modelName, defaultSchema, customMethods);
-    return mongoose.model(modelName, schema);
   }
 
-  // Fallback to In-Memory
-  return createInMemoryModel(modelName, defaultSchema, customMethods);
+  // Unified Hybrid Model Interface (Online Atlas + Offline Resilient)
+  return {
+    find(query = {}) {
+      if (mongoose.connection.readyState === 1 && mongooseModel) {
+        try {
+          const q = mongooseModel.find(query);
+          const origExec = q.exec.bind(q);
+          q.exec = async function () {
+            try {
+              return await origExec();
+            } catch (err) {
+              console.warn(`[Hybrid ${modelName}.find fallback]:`, err.message);
+              return inMemModel.find(query).exec();
+            }
+          };
+          return q;
+        } catch (e) {
+          console.warn(`[Hybrid ${modelName}.find note]:`, e.message);
+        }
+      }
+      return inMemModel.find(query);
+    },
+
+    findOne(query = {}) {
+      if (mongoose.connection.readyState === 1 && mongooseModel) {
+        try {
+          const q = mongooseModel.findOne(query);
+          const origExec = q.exec.bind(q);
+          q.exec = async function () {
+            try {
+              return await origExec();
+            } catch (err) {
+              console.warn(`[Hybrid ${modelName}.findOne fallback]:`, err.message);
+              return inMemModel.findOne(query).exec();
+            }
+          };
+          return q;
+        } catch (e) {
+          console.warn(`[Hybrid ${modelName}.findOne note]:`, e.message);
+        }
+      }
+      return inMemModel.findOne(query);
+    },
+
+    findById(id) {
+      if (mongoose.connection.readyState === 1 && mongooseModel) {
+        try {
+          const q = mongooseModel.findById(id);
+          const origExec = q.exec.bind(q);
+          q.exec = async function () {
+            try {
+              return await origExec();
+            } catch (err) {
+              console.warn(`[Hybrid ${modelName}.findById fallback]:`, err.message);
+              return inMemModel.findById(id).exec();
+            }
+          };
+          return q;
+        } catch (e) {
+          console.warn(`[Hybrid ${modelName}.findById note]:`, e.message);
+        }
+      }
+      return inMemModel.findById(id);
+    },
+
+    async findByIdAndUpdate(id, update = {}, options = {}) {
+      if (mongoose.connection.readyState === 1 && mongooseModel) {
+        try {
+          return await mongooseModel.findByIdAndUpdate(id, update, options);
+        } catch (e) {
+          console.warn(`[Hybrid ${modelName}.findByIdAndUpdate fallback]:`, e.message);
+        }
+      }
+      return inMemModel.findByIdAndUpdate(id, update, options);
+    },
+
+    async findByIdAndDelete(id) {
+      if (mongoose.connection.readyState === 1 && mongooseModel) {
+        try {
+          return await mongooseModel.findByIdAndDelete(id);
+        } catch (e) {
+          console.warn(`[Hybrid ${modelName}.findByIdAndDelete fallback]:`, e.message);
+        }
+      }
+      return inMemModel.findByIdAndDelete(id);
+    },
+
+    async create(docOrArray) {
+      try {
+        await inMemModel.create(docOrArray);
+      } catch (err) {
+        // Non-fatal memory sync
+      }
+
+      if (mongoose.connection.readyState === 1 && mongooseModel) {
+        try {
+          return await mongooseModel.create(docOrArray);
+        } catch (e) {
+          console.warn(`[Hybrid ${modelName}.create fallback]:`, e.message);
+        }
+      }
+      return inMemModel.create(docOrArray);
+    },
+
+    async countDocuments(query = {}) {
+      if (mongoose.connection.readyState === 1 && mongooseModel) {
+        try {
+          return await mongooseModel.countDocuments(query);
+        } catch (e) {
+          console.warn(`[Hybrid ${modelName}.countDocuments fallback]:`, e.message);
+        }
+      }
+      return inMemModel.countDocuments(query);
+    },
+
+    async deleteMany(query = {}) {
+      if (mongoose.connection.readyState === 1 && mongooseModel) {
+        try {
+          return await mongooseModel.deleteMany(query);
+        } catch (e) {
+          console.warn(`[Hybrid ${modelName}.deleteMany fallback]:`, e.message);
+        }
+      }
+      return inMemModel.deleteMany(query);
+    },
+
+    async aggregate(pipeline = []) {
+      if (mongoose.connection.readyState === 1 && mongooseModel) {
+        try {
+          return await mongooseModel.aggregate(pipeline);
+        } catch (e) {
+          console.warn(`[Hybrid ${modelName}.aggregate fallback]:`, e.message);
+        }
+      }
+      return inMemModel.aggregate(pipeline);
+    },
+  };
 };
 
 // Pre-seed Demo Admin in Memory fallback

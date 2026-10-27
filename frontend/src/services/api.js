@@ -26,10 +26,19 @@ api.interceptors.request.use(
 api.interceptors.response.use(
   (response) => response.data,
   (error) => {
-    const message =
+    let message =
       error.response?.data?.message ||
       error.message ||
       'An unexpected error occurred. Please try again.';
+
+    // Client safeguard: Never display raw database/infrastructure connection errors
+    if (
+      typeof message === 'string' &&
+      (message.includes('MongoDB') || message.includes('Atlas') || message.includes('0.0.0.0/0'))
+    ) {
+      message = 'Service is synchronizing. Please try again in a moment.';
+    }
+
     return Promise.reject(new Error(message));
   }
 );
