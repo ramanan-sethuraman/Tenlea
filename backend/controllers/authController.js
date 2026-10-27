@@ -1,13 +1,5 @@
-const jwt = require('jsonwebtoken');
+const { generateToken } = require('../config/jwt');
 const User = require('../models/User');
-
-const generateToken = (id) => {
-  return jwt.sign(
-    { id },
-    process.env.JWT_SECRET || 'tenlea_super_secret_jwt_key_2026_production_ready',
-    { expiresIn: process.env.JWT_EXPIRE || '30d' }
-  );
-};
 
 // @desc    Register a new user
 // @route   POST /api/v1/auth/register

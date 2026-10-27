@@ -31,12 +31,15 @@ api.interceptors.response.use(
       error.message ||
       'An unexpected error occurred. Please try again.';
 
-    // Client safeguard: Never display raw database/infrastructure connection errors
+    // Client safeguard: Never display raw database/infrastructure or token parsing errors
     if (
       typeof message === 'string' &&
-      (message.includes('MongoDB') || message.includes('Atlas') || message.includes('0.0.0.0/0'))
+      (message.includes('MongoDB') ||
+        message.includes('Atlas') ||
+        message.includes('0.0.0.0/0') ||
+        message.includes('expiresIn'))
     ) {
-      message = 'Service is synchronizing. Please try again in a moment.';
+      message = 'Authentication service is synchronizing. Please try again in a moment.';
     }
 
     return Promise.reject(new Error(message));

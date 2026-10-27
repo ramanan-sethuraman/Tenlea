@@ -1,4 +1,4 @@
-const jwt = require('jsonwebtoken');
+const { verifyToken } = require('../config/jwt');
 const User = require('../models/User');
 
 const protect = async (req, res, next) => {
@@ -10,10 +10,7 @@ const protect = async (req, res, next) => {
   ) {
     try {
       token = req.headers.authorization.split(' ')[1];
-      const decoded = jwt.verify(
-        token,
-        process.env.JWT_SECRET || 'tenlea_super_secret_jwt_key_2026_production_ready'
-      );
+      const decoded = verifyToken(token);
 
       try {
         req.user = await User.findById(decoded.id).select('-password');
